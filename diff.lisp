@@ -7,56 +7,8 @@
 
 (in-package :chiku.diff)
 
-;;; Each component of result list is a dot pair whose CAR is route and
-;;; CDR is code.
-;;; Please be aware that this function name is conflicting in my original
-;;; library called chat-with-tree.
-(defun collect-subtree (tree depth)
-  (labels ((rec (tree depth route)
-             (if (and (< 0 depth) (proper-list-p tree))
-               (loop for idx = 0 then (1+ idx)
-                     for subtree in tree
-                     append (cons (list (cons idx route) subtree)
-                                  (rec subtree (1- depth) (cons idx route)))))))
-    (cons (list (list 0) tree) (rec tree depth (list 0)))))
-
 (defun proper-list-p (obj)
   (and (listp obj) (null (cdr (last obj)))))
-
-(collect-subtree *first-impl* 3)
-(collect-subtree *first-impl* 4)
-(collect-subtree *first-impl* 5)
-(collect-subtree *first-impl* 6)
-
-(dolist (ref (collect-subtree *first-impl* 3))
-  (destructuring-bind (route subtree) ref
-    (format t "~a : ~a~%" (reverse route) subtree)))
-
-;;; DEPTH should be determined with a reasonable criteria.
-(defun collect-effective-refs (code)
-  (let ((counter (get-counter)))
-    (filter (lambda (subtree)
-              (and (not (atom subtree))
-                   (< 2 (length (flatten subtree)))
-                   (cons (funcall counter) subtree)))
-            (collect-subtree code 10))))
-
-(defun get-counter (&optional (start 0))
-  (let ((c (1- start)))
-    (lambda () (incf c))))
-
-(collect-effective-refs *first-impl*)
-
-(collect-subtree *first-impl* 2)
-
-(collect-effective-refs *first-impl*)
-
-(let ((ref '(ref . 5))
-      (route '(3 3 0))
-      (base *first-impl*))
-  (printing-let ((route-in-base (second (find (cdr ref) (collect-effective-refs base) :key #'car))))
-    route-in-base
-    (equal (drop route) route-in-base)))
 
 (defmacro with-route ((subtree-var route-var) tree &body body)
   (with-gensyms (rec idx subtree)
@@ -138,22 +90,6 @@
 
 (defun green (x)
   (format t "<font color=\"#00ff00\">~%<pre> ~a</pre>~%</font>" x))
-
-(defun showdiff (base modified distance)
-    (with-route (sub route) (rdiff base modified 'ref)
-      (if (or (find route
-                    (find-route (retrieve-by-route modified (drop (reverse route)))
-                                base)
-                    :test #'equal)
-              (some (papply (<= (levenshtein-distance route _) distance))
-                    (find-route (retrieve-by-route modified (drop (reverse route))) base)))
-        (white (retrieve-by-route modified (drop (reverse route))))
-        (if (proper-list-p sub)
-          (progn
-            (white "(") next-level (white ")"))
-          (if (consp sub)
-            (green (third (find (cdr sub) (collect-effective-refs base) :key #'car)))
-            (green sub))))))
 
 (defun route-normalize (raw-route)
   (drop (reverse raw-route)))
