@@ -81,20 +81,6 @@
 (find-route '(nreverse lst) *first-impl*)
 (find-route 'lst *first-impl*)
 
-(defun rdiff (base modified refmark)
-  (let ((subtrees (collect-effective-refs base)))
-    (labels ((rec (code)
-               (aif (find code subtrees :key #'last1 :test #'equal)
-                 (cons refmark (car it))
-                 (if (atom code) code
-                   (mapcar #'rec code)))))
-      (rec modified))))
-
-(rdiff *first-impl* *second-impl* 'ref)
-(rdiff *first-impl* *first-impl* 'ref)
-(rdiff '(a (x y z) b c) '(print (a (x y z) b c)) 'ref)
-(rdiff '(a (x y z) b c) '(a (x s z) b c) 'ref)
-
 (defun levenshtein-distance (str0 str1 &key (test #'eql))
   (if (not (shorter-or-equal str0 str1))
     (levenshtein-distance str1 str0)
@@ -144,30 +130,6 @@
 
 (retrieve-by-route '(a b (x (s t u) y z) c) '(2 1 2 1))
 
-(let ((route (car (find-route '(PUSH I LST) *first-impl*))))
-  (rdiff *first-impl* (retrieve-by-route *first-impl* (drop (reverse route))) 'ref))
-
-(car (find-route '(ref . 11) (rdiff *first-impl* *second-impl* 'ref)))
-
-(levenshtein-distance
-  (mapcar (papply (rdiff *first-impl* _ 'ref))
-          (retrieve-by-route *first-impl* (drop (nreverse '(2 2 3 0)))))
-  (retrieve-by-route (rdiff *first-impl* *second-impl* 'ref) (drop (nreverse '(2 2 3 0))))
-  :test #'equal)
-
-(defun longer-length (sec0 sec1)
-  (length (if (shorter sec0 sec1) sec1 sec0)))
-
-(defun similar? (code0 code1)
-  (< (/ (levenshtein-distance code0 code1 :test #'equal)
-        (longer-length code0 code1))
-     0.5))
-
-(similar?
-  (mapcar (papply (rdiff *first-impl* _ 'ref))
-          (retrieve-by-route *first-impl* (drop (nreverse '(2 2 3 0)))))
-  (retrieve-by-route (rdiff *first-impl* *second-impl* 'ref) (drop (nreverse '(2 2 3 0)))))
-
 (defun white (x)
   (format t "<font color=\"#ffffff\">~%<pre> ~a</pre>~%</font>" x))
 
@@ -192,36 +154,6 @@
           (if (consp sub)
             (green (third (find (cdr sub) (collect-effective-refs base) :key #'car)))
             (green sub))))))
-
-(with-open-file (out "tmp.html" :direction :output :if-does-not-exist :create :if-exists :supersede)
-  (let ((*standard-output* out))
-    (write-line "<html> <head><title></title></head> <body bgcolor=\"000000\"><p>")
-    (showdiff *first-impl* *first-impl* 0)
-    (write-line "<br/>")
-    (mapc (lambda (x)
-            (white (format nil "~a : " x))
-            (showdiff *first-impl* `(progn ,*third-impl*) x)
-            (write-line "<br/>"))
-          (iota 8))
-    (write-line "</p></body></html>")))
-
-(with-open-file (out "tmp.html" :direction :output :if-does-not-exist :create :if-exists :supersede)
-  (let ((*standard-output* out))
-    (write-line "<html> <head><title></title></head> <body bgcolor=\"000000\"><p>")
-    (mapc (lambda (n)
-            (white (format nil "~a : " n))
-            (showdiff
-              '(lambda (x)
-                 (showdiff *first-impl* *second-impl* x)
-                 (write-line "br/>"))
-              '(lambda (x)
-                 (princ x)
-                 (showdiff *first-impl* *second-impl* x)
-                 (write-line "br/>"))
-              n)
-            (write-line "<br/>"))
-          (iota 4))
-    (write-line "</p></body></html>")))
 
 (defun route-normalize (raw-route)
   (drop (reverse raw-route)))
