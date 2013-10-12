@@ -172,7 +172,7 @@
              (:resolve () (if reserved (cons ref-mark route) subtree))
              (:cancel () (setf reserved nil)))))
 
-(defun rdiff (base modified refmark &optional allowed-distance)
+(defun rdiff (base modified refmark &optional (allowed-distance 1))
   (with-route (node r)
               (let (tmp)
                 (with-route (cur route) modified
