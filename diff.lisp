@@ -82,15 +82,6 @@
 
 (retrieve-by-route '(a b (x (s t u) y z) c) '(2 1 2 1))
 
-(defun white (x)
-  (format t "<font color=\"#ffffff\">~%<pre> ~a</pre>~%</font>" x))
-
-(defun red (x)
-  (format t "<font color=\"#ff0000\">~%<pre> ~a</pre>~%</font>" x))
-
-(defun green (x)
-  (format t "<font color=\"#00ff00\">~%<pre> ~a</pre>~%</font>" x))
-
 (defun route-normalize (raw-route)
   (drop (reverse raw-route)))
 
@@ -213,68 +204,3 @@
 (defun lostnode-p (node dismark)
   (and (proper-list-p node) (eq (car node) dismark)))
 
-(printing-let* ((base '(lambda (x)
-                         (showdiff *first-impl* *second-impl* x)
-                         (write-line "br/<")))
-                (modified '(lambda (x)
-                             (princ x)
-                             (print (showdiff *first-impl* *second-impl* x))))
-                (newnode-detected-diff  (rdiff base modified 'ref 1))
-                (lost-subtrees (lost-subtree-list newnode-detected-diff base 'ref 'lost)))
-               newnode-detected-diff
-               lost-subtrees
-               (merge-lost newnode-detected-diff lost-subtrees 'ref))
-
-(defun output-diff-as-html (base modified &optional (stream *standard-output*) (allowed-distance 1))
-  (let* ((*standard-output* stream)
-         (refmark (gensym)) (dismark (gensym))
-         (newnode-detected-diff (rdiff base modified refmark allowed-distance))
-         (lost-subtrees (lost-subtree-list newnode-detected-diff base refmark dismark)))
-    (write-line "<html> <head><title></title></head> <body bgcolor=\"000000\"><p>")
-    (with-route (cur route) (merge-lost newnode-detected-diff lost-subtrees refmark)
-      (cond ((refnode-p cur refmark) (white (retrieve-by-route base (route-normalize (drop cur)))))
-            ((lostnode-p cur dismark) (red (retrieve-by-route base (route-normalize (drop cur)))))
-            ((atom cur) (green cur))
-            (t (white "(") next-level (white ")"))))
-  (write-line "</p></body></html>")))
-
-(with-open-file (out "tmp.html" :direction :output :if-does-not-exist :create :if-exists :supersede)
-  (output-diff-as-html '(lambda (x)
-                          (showdiff *first-impl* *second-impl* x)
-                          (write-line "br/>"))
-                       '(lambda (x)
-                          (princ x)
-                          (print (showdiff *first-impl* *second-impl* x)))
-                       out 2))
-
-(with-open-file (out "tmp.html" :direction :output :if-does-not-exist :create :if-exists :supersede)
-  (output-diff-as-html *first-impl* *first-impl* out 1)
-  (output-diff-as-html *second-impl* *second-impl* out 1)
-  (output-diff-as-html *first-impl* *second-impl* out 1)
-  (output-diff-as-html *first-impl* *third-impl* out 1)
-  (output-diff-as-html *first-impl* *third-impl* out 1)
-  (output-diff-as-html *first-impl* *fourth-impl* out 1)
-  (output-diff-as-html *first-impl* *fifth-impl* out 1)
-  (output-diff-as-html *first-impl* *impl1* out 1)
-  (output-diff-as-html *impl1* *first-impl* out 1)
-  (output-diff-as-html *second-impl* *first-impl* out 1)
-  (output-diff-as-html '(x y z w) '(x z w) out 1))
-
-(lost-subtree-list (rdiff *first-impl* *second-impl* 'ref) *first-impl* 'ref 'lost)
-
-(printing-let* ((base *first-impl*)
-                (modified *impl1*)
-                (newnode-detected-diff  (rdiff base modified 'ref 1))
-                (lost-subtrees (lost-subtree-list newnode-detected-diff base 'ref 'lost)))
-               newnode-detected-diff
-               lost-subtrees
-               (merge-lost newnode-detected-diff lost-subtrees 'ref))
-
-(with-open-file (out "tmp.html" :direction :output :if-does-not-exist :create :if-exists :supersede)
-  (output-diff-as-html '(lambda (x)
-                          (showdiff *first-impl* *second-impl* x)
-                          (write-line "br/>"))
-                       '(lambda (x)
-                          (princ x)
-                          (print (showdiff *first-impl* *second-impl* x)))
-                       out 2))
