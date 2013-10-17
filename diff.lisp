@@ -204,3 +204,45 @@
 (defun lostnode-p (node dismark)
   (and (proper-list-p node) (eq (car node) dismark)))
 
+(printing-let* ((base *first-impl*)
+                (modified *impl2*)
+                (newnode-detected-diff  (rdiff base modified 'ref 1))
+                (lost-subtrees (lost-subtree-list newnode-detected-diff base 'ref 'lost)))
+               newnode-detected-diff
+               lost-subtrees
+               (merge-lost newnode-detected-diff lost-subtrees 'ref))
+
+(defun apply-modifiednode-converters (diff base refmark dismark newnode-converter lostnode-converter)
+  (with-route (cur route) diff
+    (cond ((refnode-p cur refmark) (retrieve-by-route base (route-normalize (drop cur))))
+          ((lostnode-p cur dismark) (funcall lostnode-converter
+                                             (retrieve-by-route base (route-normalize (drop cur)))))
+          ((atom cur) (funcall newnode-converter cur))
+          ((composed-of-newnodes-p cur refmark dismark)
+           (funcall newnode-converter cur))
+          (t next-level))))
+
+(defun composed-of-newnodes-p (tree refmark dismark)
+  (reduce (lambda (acc node)
+            (and acc
+                 (cond ((atom node) t)
+                       ((or (refnode-p node refmark) (lostnode-p node refmark)) nil)
+                       (t (composed-of-newnodes-p node refmark dismark)))))
+          tree
+          :initial-value t))
+
+(defun wrap-by-bracket (expr)
+  (list '[ expr ']))
+
+(defun wrap-by-brace (expr)
+  (list '{ expr '}))
+
+(defun bracebracket (base modified &optional (allowed-distance 1))
+  (let* ((refmark (gensym)) (dismark (gensym))
+         (newnode-detected-diff (rdiff base modified refmark allowed-distance))
+         (lost-subtrees (lost-subtree-list newnode-detected-diff base refmark dismark)))
+    (apply-modifiednode-converters
+      (merge-lost newnode-detected-diff lost-subtrees refmark)
+      base refmark dismark #'wrap-by-brace #'wrap-by-bracket)))
+
+(bracebracket *first-impl* *second-impl*)
