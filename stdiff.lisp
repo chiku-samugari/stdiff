@@ -5,7 +5,7 @@
 ;;; is also targets of this project.
 (load "packages.lisp")
 
-(in-package :chiku.diff)
+(in-package :stdiff)
 
 (defun proper-list-p (obj)
   (and (listp obj) (null (cdr (last obj)))))
