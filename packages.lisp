@@ -1,3 +1,3 @@
 (defpackage :chiku.diff
-  (:use :cl :chiku.util)
-  (:export :diff))
+  (:use :cl :chiku.util :pphtml)
+  (:export :stdiff))

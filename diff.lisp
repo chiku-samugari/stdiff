@@ -222,6 +222,12 @@
            (funcall newnode-converter cur))
           (t next-level))))
 
+(defun stdiff (base modified refmark dismark &optional (allowed-distance 0))
+  (let ((newnode-detected-diff (rdiff base modified refmark allowed-distance)))
+    (merge-lost newnode-detected-diff
+                (lost-subtree-list newnode-detected-diff base refmark dismark)
+                refmark)))
+
 (defun composed-of-newnodes-p (tree refmark dismark)
   (reduce (lambda (acc node)
             (and acc
@@ -238,11 +244,9 @@
   (list '{ expr '}))
 
 (defun bracebracket (base modified &optional (allowed-distance 0))
-  (let* ((refmark (gensym)) (dismark (gensym))
-         (newnode-detected-diff (rdiff base modified refmark allowed-distance))
-         (lost-subtrees (lost-subtree-list newnode-detected-diff base refmark dismark)))
+  (with-gensyms (refmark dismark)
     (apply-modifiednode-converters
-      (merge-lost newnode-detected-diff lost-subtrees refmark)
+      (stdiff base modified refmark dismark allowed-distance)
       base refmark dismark #'wrap-by-brace #'wrap-by-bracket)))
 
 (bracebracket *first-impl* *second-impl*)
