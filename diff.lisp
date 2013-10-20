@@ -99,7 +99,7 @@
              (:resolve () (if reserved (cons ref-mark route) subtree))
              (:cancel () (setf reserved nil)))))
 
-(defun rdiff (base modified refmark &optional (allowed-distance 1))
+(defun rdiff (base modified refmark &optional (allowed-distance 0))
   (with-route (node r)
               (let (tmp)
                 (with-route (cur route) modified
@@ -237,7 +237,7 @@
 (defun wrap-by-brace (expr)
   (list '{ expr '}))
 
-(defun bracebracket (base modified &optional (allowed-distance 1))
+(defun bracebracket (base modified &optional (allowed-distance 0))
   (let* ((refmark (gensym)) (dismark (gensym))
          (newnode-detected-diff (rdiff base modified refmark allowed-distance))
          (lost-subtrees (lost-subtree-list newnode-detected-diff base refmark dismark)))
