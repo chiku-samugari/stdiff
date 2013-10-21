@@ -161,34 +161,40 @@
             (t (push (cons lostmark route) result))))
       (nreverse result)))
 
-(printing-let* ((base '(lambda (x)
-                         (showdiff *first-impl* *second-impl* x)
-                         (write-line "br/>")))
-                (modified '(lambda (x)
-                             (princ x)
-                             (print (showdiff *first-impl* *second-impl* x)))))
-  (rdiff base modified 'ref 1)
-  (lost-subtree-list (rdiff base modified 'ref 1) base 'ref 'lost))
+;(printing-let* ((base '(lambda (x)
+;                         (showdiff *first-impl* *second-impl* x)
+;                         (write-line "br/>")))
+;                (modified '(lambda (x)
+;                             (princ x)
+;                             (print (showdiff *first-impl* *second-impl* x)))))
+;  (rdiff base modified 'ref 1)
+;  (lost-subtree-list (rdiff base modified 'ref 1) base 'ref 'lost))
 
 (defun merge-lost (routeref-diff lost-subtrees refmark)
   (labels ((rec (node route)
              (if (atom node) node
-               (let ((lostnodes (remove-if-not (p (equal (drop _ 2) route)) lost-subtrees)))
+               (let ((lostnodes (remove-if-not (p (equal (drop _ 2) route)) lost-subtrees))
+                     (nodelength (length node)))
                  (mapcan (lambda (order)
-                           (let ((cur-item (nth order node)))
-                             (cond ((member order (remove-if-not #'%refnode-p node) :key #'second)
+                           (let* ((cur-item (nth order node))
+                                  (cur-item-available? (and cur-item (< order nodelength))))
+                             (cond ((or (atom cur-item) (%refnode-p cur-item))
                                     (aif (member order lostnodes :key #'second)
-                                      (list (car it)
-                                            (car (member order (remove-if-not #'%refnode-p node) :key #'second)))
-                                      (list (car (member order (remove-if-not #'%refnode-p node) :key #'second)))))
+                                      (if cur-item-available?
+                                        (list (car it) cur-item)
+                                        (list (car it)))
+                                      (if cur-item-available?
+                                        (list cur-item))))
                                    ((member order lostnodes :key #'second)
-                                    (if (or (and (%refnode-p cur-item ) (eql (second cur-item) order))
-                                            (and (not (%refnode-p cur-item )) cur-item))
+                                    (if cur-item-available?
+                                      ;; the case that a node (cur-item) that is not
+                                      ;; a leaf node has LOST. If such node has not
+                                      ;; yet lost, then it will be recursively processed.
                                       (list (car (member order lostnodes :key #'second)) cur-item)
                                       (list (car (member order lostnodes :key #'second)))))
                                    (t (list (rec (nth order node) (cons order route)))))))
                          (iota (max (1+ (apply #'max 0 (mapcar #'second lostnodes)) )
-                                    (length node)
+                                    nodelength
                                     (1+ (apply #'max 0 (filter (lambda (child)
                                                                  (and (%refnode-p child)
                                                                       (second child)))
