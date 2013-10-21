@@ -172,7 +172,6 @@
 
 (defun merge-lost (routeref-diff lost-subtrees refmark)
   (labels ((rec (node route)
-             (if (atom node) node
                (let ((lostnodes (remove-if-not (p (equal (drop _ 2) route)) lost-subtrees))
                      (nodelength (length node)))
                  (mapcan (lambda (order)
@@ -198,9 +197,15 @@
                                     (1+ (apply #'max 0 (filter (lambda (child)
                                                                  (and (%refnode-p child)
                                                                       (second child)))
-                                                               node)))))))))
+                                                               node))))))))
            (%refnode-p (node) (refnode-p node refmark)))
-    (rec routeref-diff (list 0))))
+    (cond ((or (atom routeref-diff) (%refnode-p routeref-diff))
+           (aif (eql 0 (second (car lost-subtrees)))
+             (list (car lost-subtrees) routeref-diff)
+             routeref-diff))
+           ((member '(0) lost-subtrees :key #'drop :test #'equal)
+             (list (car (member '(0) lost-subtrees :key #'drop :test #'equal)) routeref-diff))
+           (t (rec routeref-diff (list 0))))))
 
 (defun refnode-p (node refmark)
   (and (proper-list-p node) (eq (car node) refmark)))
