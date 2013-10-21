@@ -232,7 +232,7 @@
   (reduce (lambda (acc node)
             (and acc
                  (cond ((atom node) t)
-                       ((or (refnode-p node refmark) (lostnode-p node refmark)) nil)
+                       ((or (refnode-p node refmark) (lostnode-p node dismark)) nil)
                        (t (composed-of-newnodes-p node refmark dismark)))))
           tree
           :initial-value t))
