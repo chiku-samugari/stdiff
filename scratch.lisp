@@ -1,3 +1,5 @@
+(in-package :stdiff)
+
 (let ((base '(lambda (x)
                (showdiff *first-impl* *second-impl* x)
                (write-line "br/>")))
@@ -40,3 +42,116 @@
 (with-route (node route) *impl1*
             (print route) (print node)
             next-level)
+
+(setq vdefun0
+      '(defmacro vdefun (name params &body body)
+         (with-gensyms (args result)
+           `(progn
+              (if already-fbound? (fmakunbound 'name))
+              (defun ,name (,@params) ,@body)
+
+              (set-current-impl-entry
+                ',name
+                (add-impl ',name
+                          `(defun ,',name ,',params ,@',body)
+                          #',name))
+
+              (run-test ',name)
+
+              (defun ,name (&rest ,args)
+                (destructuring-bind (,@params)
+                  ,args
+                  (let ((,result (progn ,@body)))
+                    (add-rindoh-entry ',name `(,',name ,@,args)
+                                      (gen-rindoh-entry (lambda () (with-raw-fn (,name)
+                                                                     (equal (apply #',name ,args) ,result)))
+                                                        ,result
+                                                        #'equal
+                                                        `(equal (,',name ,@,args) ,,result)))
+                    ,result)))))))
+
+(setq vdefun1
+      '(defmacro vdefun (name params &body body)
+         (with-gensyms (args result)
+           `(progn
+              (let ((already-fbound? (fboundp ',name)))
+                ;; If a function whose name is ``NAME'' has already been
+                ;; defined, then the warning message at this point should be
+                ;; surpressed.
+                (if already-fbound? (fmakunbound 'name))
+                (defun ,name (,@params) ,@body)
+
+                (set-current-impl-entry
+                  ',name
+                  (add-impl ',name
+                            `(defun ,',name ,',params ,@',body)
+                            #',name))
+
+                (run-test ',name)
+
+                ;; If a function whose name is ``NAME'' has not yet been
+                ;; defined, then the warning message at this point should be
+                ;; surpressed.
+                (if (not already-fbound?) (fmakunbound 'name))
+
+                (defun ,name (&rest ,args)
+                  (destructuring-bind (,@params)
+                    ,args
+                    (let ((,result (progn ,@body)))
+                      (add-rindoh-entry ',name `(,',name ,@,args)
+                                        (gen-rindoh-entry (lambda () (with-raw-fn (,name)
+                                                                       (equal (apply #',name ,args) ,result)))
+                                                          ,result
+                                                          #'equal
+                                                          `(equal (,',name ,@,args) ,,result)))
+                      ,result))))))))
+
+(pphtml::output-as-html
+  (format nil "<pre>~a</pre>"
+          (pphtml::pair-coloring
+            "({" "})" #'pphtml::green
+            (pphtml::pair-coloring
+              "([" "])" #'pphtml::red
+              (stdiff::bracebracket vdefun0 vdefun1))))
+  "tmp.html")
+
+(asdf:load-system  :pphtml)
+(use-package :pphtml)
+
+(output-as-html (format nil "<pre>~a</pre>"
+                        (pair-coloring
+                          "({" "})"
+                          #'pphtml::green
+                          (pair-coloring "([" "])"
+                                        #'pphtml::red
+                                        (bracebracket *first-impl* *third-impl* 0))))
+                "tmp.html")
+
+(output-as-html (format nil "<pre>~a</pre>"
+                        (pair-coloring "({" "})" #'pphtml::green
+                                      (pair-coloring "([" "])" #'pphtml::red
+                                                    (bracebracket *second-impl* *first-impl* 0))))
+                "tmp.html")
+
+(output-as-html
+  (reduce #'(concat-str
+              _ (format nil "<pre>~a</pre>"
+                        (pair-coloring
+                          "({" "})" #'pphtml::green
+                          (pair-coloring
+                            "([" "])" #'pphtml::red
+                            (print (bracebracket *seqlast2* (list 'progn *seqlast2*) _))))))
+          (iota 5) :initial-value "")
+  "tmp.html")
+
+(bracebracket '(x y z w) '(x y a z w ) 3)
+(bracebracket '(x) '(w))
+(rdiff *seqlast2* `(progn ,*seqlast2*) 'ref 0)
+(lost-subtree-list (rdiff  *seqlast2* `(progn ,*seqlast2*) 'ref 0) *seqlast2* 'ref 'lost)
+(lost-subtree-list (rdiff  *seqlast2* *seqlast0* 'ref 0) *seqlast2* 'ref 'lost)
+(lost-subtree-list (rdiff  '(x) '(w) 'ref 0) '(x) 'ref 'lost)
+(stdiff '(x) '(w) 'ref 'lost)
+
+(bracebracket 'a 'x)
+(stdiff 'a 'x 'ref 'lost 1)
+(lost-subtree-list (rdiff 'a 'x 'ref 1) 'a 'ref 'lost)
