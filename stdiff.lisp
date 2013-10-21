@@ -28,8 +28,8 @@
         next-level)
       result)))
 
-(find-route '(nreverse lst) *first-impl*)
-(find-route 'lst *first-impl*)
+;(find-route '(nreverse lst) *first-impl*)
+;(find-route 'lst *first-impl*)
 
 (defun levenshtein-distance (str0 str1 &key (test #'eql))
   (if (not (shorter-or-equal str0 str1))
@@ -57,14 +57,14 @@
                    (iota (1+ (length str1))))))
         (last1 (rec (coerce str0 'cons)))))))
 
-(levenshtein-distance '(1) '(1))
-(levenshtein-distance '(1 2 3) '(1 2 4))
-(levenshtein-distance '(1 1 2 2 3 0) '(1 2 2 3 0) :test #'equal)
-(levenshtein-distance (coerce "kitten" 'cons) (coerce "akitten" 'cons))
-(levenshtein-distance (coerce "kitten" 'cons) (coerce "sitting" 'cons))
-(levenshtein-distance (coerce "sitting" 'cons) (coerce "kitten" 'cons))
-(levenshtein-distance '(a b c) '(x y z))
-(levenshtein-distance '(a b c) '(a (x y z) c))
+;(levenshtein-distance '(1) '(1))
+;(levenshtein-distance '(1 2 3) '(1 2 4))
+;(levenshtein-distance '(1 1 2 2 3 0) '(1 2 2 3 0) :test #'equal)
+;(levenshtein-distance (coerce "kitten" 'cons) (coerce "akitten" 'cons))
+;(levenshtein-distance (coerce "kitten" 'cons) (coerce "sitting" 'cons))
+;(levenshtein-distance (coerce "sitting" 'cons) (coerce "kitten" 'cons))
+;(levenshtein-distance '(a b c) '(x y z))
+;(levenshtein-distance '(a b c) '(a (x y z) c))
 
 (defun retrieve-by-route (code route)
   " The first value is the retrieved code and the second value denotes
@@ -129,13 +129,13 @@
                     ((atom node) node)
                     (t next-level))))
 
-(let* ((base '(lambda (x)
-                (showdiff *first-impl* *second-impl* x)
-                (write-line "br/>")))
-       (modified '(lambda (x)
-                    (princ x)
-                    (print (showdiff *first-impl* *second-impl* x)))))
-  (rdiff base modified 'ref 2))
+;(let* ((base '(lambda (x)
+;                (showdiff *first-impl* *second-impl* x)
+;                (write-line "br/>")))
+;       (modified '(lambda (x)
+;                    (princ x)
+;                    (print (showdiff *first-impl* *second-impl* x)))))
+;  (rdiff base modified 'ref 2))
 
 (defun construct-routeref-lst (routeref-diff refmark)
   (let ((result))
@@ -207,19 +207,46 @@
              (list (car (member '(0) lost-subtrees :key #'drop :test #'equal)) routeref-diff))
            (t (rec routeref-diff (list 0))))))
 
+(reduce (lambda (item partial)
+          (if (car item)
+            (cons (cdr item) partial)
+            partial))
+        (list (cons (evenp 0) 20) (cons (evenp 1) 10) (cons (evenp 3) 30))
+        :initial-value ()
+        :from-end t)
+
+(condlist ((member order lostnodes :key #'second)
+                (list (car (member order lostnodes :key #'second))))
+               ((and cur-item-available?
+                     (or (atom cur-item) (%refnode-p cur-item)) cur-item))
+               (t (rec (nth order node) (cons order route))))
+
+(reduce (lambda (cond-item partial)
+          (if (car cond-item)
+            (cons (cdr cond-item) partial)
+            partial))
+        (list (cons (member order lostnodes :key #'second)
+                    (car (member order lostnodes :key #'second)))
+               (cons (and cur-item-available?
+                          (or (atom cur-item) (%refnode-p cur-item)))
+                     cur-item)
+               (t (rec (nth order node) (cons order route))))
+        :initial-value ()
+        :from-end t)
+
 (defun refnode-p (node refmark)
   (and (proper-list-p node) (eq (car node) refmark)))
 
 (defun lostnode-p (node dismark)
   (and (proper-list-p node) (eq (car node) dismark)))
 
-(printing-let* ((base *first-impl*)
-                (modified *impl2*)
-                (newnode-detected-diff  (rdiff base modified 'ref 1))
-                (lost-subtrees (lost-subtree-list newnode-detected-diff base 'ref 'lost)))
-               newnode-detected-diff
-               lost-subtrees
-               (merge-lost newnode-detected-diff lost-subtrees 'ref))
+;(printing-let* ((base *first-impl*)
+;                (modified *impl2*)
+;                (newnode-detected-diff  (rdiff base modified 'ref 1))
+;                (lost-subtrees (lost-subtree-list newnode-detected-diff base 'ref 'lost)))
+;               newnode-detected-diff
+;               lost-subtrees
+;               (merge-lost newnode-detected-diff lost-subtrees 'ref))
 
 (defun apply-modifiednode-converters (diff base refmark dismark newnode-converter lostnode-converter)
   (with-route (cur route) diff
@@ -258,4 +285,4 @@
       (stdiff base modified refmark dismark allowed-distance)
       base refmark dismark #'wrap-by-brace #'wrap-by-bracket)))
 
-(bracebracket *first-impl* *second-impl*)
+;(bracebracket *first-impl* *second-impl*)
