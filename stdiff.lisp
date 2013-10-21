@@ -3,8 +3,6 @@
 ;;; to construct a diff algorithm that is aware of wrapping operation.
 ;;; Not only the wrapping operation, but also insertion or extraction
 ;;; is also targets of this project.
-(load "packages.lisp")
-
 (in-package :stdiff)
 
 (defun proper-list-p (obj)
