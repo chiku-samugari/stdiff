@@ -11,6 +11,5 @@
   :description "STDIFF"
   :long-description "STDIFF : Syntax tree diff for Common Lisp."
   :serial t
-  :defsystem-depends-on (:pphtml)
   :components ((:file "packages")
                (:file "stdiff")))

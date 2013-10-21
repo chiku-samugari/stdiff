@@ -1,4 +1,4 @@
-(in-package :chiku.diff)
+(in-package :stdiff)
 
 (defvar *first-impl*
   '(defun iota (n)
