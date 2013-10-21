@@ -50,3 +50,16 @@
            (dotimes (i n (nreverse lst)) (push i lst)))))
      "SOMETHING"))
 
+(defvar *seqlast0*
+  '(defun seqlast (seq)
+     (subseq seq (1- (length seq)))))
+
+(defvar *seqlast1*
+  '(defun seqlast (seq &optional (n 1))
+     (subseq seq (- (length seq) n))))
+
+(defvar *seqlast2*
+  '(defun seqlast (seq &optional (n 1))
+     (ctypecase seq
+       (cons (last seq n))
+       (subseq seq (- (length seq) n)))))
