@@ -237,8 +237,8 @@
 (defun refnode-p (node refmark)
   (and (proper-list-p node) (eq (car node) refmark)))
 
-(defun lostnode-p (node dismark)
-  (and (proper-list-p node) (eq (car node) dismark)))
+(defun lostnode-p (node lostmark)
+  (and (proper-list-p node) (eq (car node) lostmark)))
 
 ;(printing-let* ((base *first-impl*)
 ;                (modified *impl2*)
@@ -248,28 +248,28 @@
 ;               lost-subtrees
 ;               (merge-lost newnode-detected-diff lost-subtrees 'ref))
 
-(defun apply-modifiednode-converters (diff base refmark dismark newnode-converter lostnode-converter)
+(defun apply-modifiednode-converters (diff base refmark lostmark newnode-converter lostnode-converter)
   (with-route (cur route) diff
     (cond ((refnode-p cur refmark) (retrieve-by-route base (route-normalize (drop cur))))
-          ((lostnode-p cur dismark) (funcall lostnode-converter
+          ((lostnode-p cur lostmark) (funcall lostnode-converter
                                              (retrieve-by-route base (route-normalize (drop cur)))))
           ((atom cur) (funcall newnode-converter cur))
-          ((composed-of-newnodes-p cur refmark dismark)
+          ((composed-of-newnodes-p cur refmark lostmark)
            (funcall newnode-converter cur))
           (t next-level))))
 
-(defun stdiff (base modified refmark dismark &optional (allowed-distance 0))
+(defun stdiff (base modified refmark lostmark &optional (allowed-distance 0))
   (let ((newnode-detected-diff (rdiff base modified refmark allowed-distance)))
     (merge-lost newnode-detected-diff
-                (lost-subtree-list newnode-detected-diff base refmark dismark)
+                (lost-subtree-list newnode-detected-diff base refmark lostmark)
                 refmark)))
 
-(defun composed-of-newnodes-p (tree refmark dismark)
+(defun composed-of-newnodes-p (tree refmark lostmark)
   (reduce (lambda (acc node)
             (and acc
                  (cond ((atom node) t)
-                       ((or (refnode-p node refmark) (lostnode-p node dismark)) nil)
-                       (t (composed-of-newnodes-p node refmark dismark)))))
+                       ((or (refnode-p node refmark) (lostnode-p node lostmark)) nil)
+                       (t (composed-of-newnodes-p node refmark lostmark)))))
           tree
           :initial-value t))
 
@@ -280,9 +280,9 @@
   (list '{ expr '}))
 
 (defun bracebracket (base modified &optional (allowed-distance 0))
-  (with-gensyms (refmark dismark)
+  (with-gensyms (refmark lostmark)
     (apply-modifiednode-converters
-      (stdiff base modified refmark dismark allowed-distance)
-      base refmark dismark #'wrap-by-brace #'wrap-by-bracket)))
+      (stdiff base modified refmark lostmark allowed-distance)
+      base refmark lostmark #'wrap-by-brace #'wrap-by-bracket)))
 
 ;(bracebracket *first-impl* *second-impl*)
