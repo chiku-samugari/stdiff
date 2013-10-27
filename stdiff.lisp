@@ -2,7 +2,7 @@
 ;;; This project is spun off from update-function project in order
 ;;; to construct a diff algorithm that is aware of wrapping operation.
 ;;; Not only the wrapping operation, but also insertion or extraction
-;;; is also targets of this project.
+;;; are targets of this project.
 (in-package :stdiff)
 
 (defun proper-list-p (obj)
