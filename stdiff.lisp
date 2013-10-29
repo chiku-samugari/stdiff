@@ -137,7 +137,7 @@
 ;                    (print (showdiff *first-impl* *second-impl* x)))))
 ;  (rdiff base modified 'ref 2))
 
-(defun construct-routeref-lst (routeref-diff refmark)
+(defun routeref-list (routeref-diff refmark)
   (let ((result))
     (maptree (lambda (leaf)
                ;; Here, we need to coerce ATOMs into NIL. The MAPTREE
@@ -151,7 +151,7 @@
     result))
 
 (defun lost-subtree-list (routeref-diff base refmark lostmark)
-  (let ((routeref-lst (construct-routeref-lst routeref-diff refmark))
+  (let ((routeref-lst (routeref-list routeref-diff refmark))
         result)
     (with-route (sub route) base
       (cond ((find route routeref-lst :test #'equal) (cons refmark route))
