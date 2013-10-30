@@ -97,6 +97,7 @@
              (:resolve () (if reserved (cons ref-mark route) subtree))
              (:cancel () (setf reserved nil)))))
 
+;;; RDIFF function returns a diff format called ``refdiff''
 (defun rdiff (base modified refmark &optional (allowed-distance 0))
   (with-route (node r)
               (let (tmp)
@@ -137,7 +138,7 @@
 ;                    (print (showdiff *first-impl* *second-impl* x)))))
 ;  (rdiff base modified 'ref 2))
 
-(defun routeref-list (routeref-diff refmark)
+(defun refnode-list (refdiff refmark)
   (let ((result))
     (maptree (lambda (leaf)
                ;; Here, we need to coerce ATOMs into NIL. The MAPTREE
@@ -146,17 +147,17 @@
                ;; S-expressions other than ATOMs as leaves.
                (if (not (atom leaf))
                  (car (push (cdr leaf) result))))
-             routeref-diff
+             refdiff
              :pred (lambda (x) (or (atom x) (eq (car x) refmark))))
     result))
 
-(defun lost-subtree-list (routeref-diff base refmark lostmark)
-  (let ((routeref-lst (routeref-list routeref-diff refmark))
+(defun lostnode-list (refdiff base refmark lostmark)
+  (let ((refnodes (refnode-list refdiff refmark))
         result)
     (with-route (sub route) base
-      (cond ((find route routeref-lst :test #'equal) (cons refmark route))
+      (cond ((find route refnodes :test #'equal) (cons refmark route))
             ((find-if #'(start-with (route-normalize route) (route-normalize _))
-                      routeref-lst)
+                      refnodes)
              next-level)
             (t (push (cons lostmark route) result))))
       (nreverse result)))
@@ -168,11 +169,11 @@
 ;                             (princ x)
 ;                             (print (showdiff *first-impl* *second-impl* x)))))
 ;  (rdiff base modified 'ref 1)
-;  (lost-subtree-list (rdiff base modified 'ref 1) base 'ref 'lost))
+;  (lostnode-list (rdiff base modified 'ref 1) base 'ref 'lost))
 
-(defun merge-lost (routeref-diff lost-subtrees refmark)
+(defun merge-lost (refdiff lostnode-lst refmark)
   (labels ((rec (node route)
-               (let ((lostnodes (remove-if-not (p (equal (drop _ 2) route)) lost-subtrees))
+               (let ((lostnodes (remove-if-not (p (equal (drop _ 2) route)) lostnode-lst))
                      (nodelength (length node)))
                  (mapcan (lambda (order)
                            (let* ((cur-item (nth order node))
@@ -199,13 +200,13 @@
                                                                       (second child)))
                                                                node))))))))
            (%refnode-p (node) (refnode-p node refmark)))
-    (cond ((or (atom routeref-diff) (%refnode-p routeref-diff))
-           (aif (eql 0 (second (car lost-subtrees)))
-             (list (car lost-subtrees) routeref-diff)
-             routeref-diff))
-           ((member '(0) lost-subtrees :key #'drop :test #'equal)
-             (list (car (member '(0) lost-subtrees :key #'drop :test #'equal)) routeref-diff))
-           (t (rec routeref-diff (list 0))))))
+    (cond ((or (atom refdiff) (%refnode-p refdiff))
+           (aif (eql 0 (second (car lostnode-lst)))
+             (list (car lostnode-lst) refdiff)
+             refdiff))
+           ((member '(0) lostnode-lst :key #'drop :test #'equal)
+             (list (car (member '(0) lostnode-lst :key #'drop :test #'equal)) refdiff))
+           (t (rec refdiff (list 0))))))
 
 (reduce (lambda (item partial)
           (if (car item)
@@ -243,7 +244,7 @@
 ;(printing-let* ((base *first-impl*)
 ;                (modified *impl2*)
 ;                (newnode-detected-diff  (rdiff base modified 'ref 1))
-;                (lost-subtrees (lost-subtree-list newnode-detected-diff base 'ref 'lost)))
+;                (lost-subtrees (lostnode-list newnode-detected-diff base 'ref 'lost)))
 ;               newnode-detected-diff
 ;               lost-subtrees
 ;               (merge-lost newnode-detected-diff lost-subtrees 'ref))
