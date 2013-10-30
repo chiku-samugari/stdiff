@@ -179,19 +179,17 @@
                            (let* ((cur-item (nth order node))
                                   (cur-item-available? (and cur-item (< order nodelength))))
                              (cond ((or (atom cur-item) (%refnode-p cur-item))
-                                    (aif (member order lostnodes :key #'second)
-                                      (if cur-item-available?
-                                        (list (car it) cur-item)
-                                        (list (car it)))
-                                      (if cur-item-available?
-                                        (list cur-item))))
+                                    (list-by-det
+                                      (let ((lost (member order lostnodes :key #'second)))
+                                        (cons lost (car lost)))
+                                      (cons cur-item-available? cur-item)))
                                    ((member order lostnodes :key #'second)
-                                    (if cur-item-available?
-                                      ;; the case that a node (cur-item) that is not
-                                      ;; a leaf node has LOST. If such node has not
-                                      ;; yet lost, then it will be recursively processed.
-                                      (list (car (member order lostnodes :key #'second)) cur-item)
-                                      (list (car (member order lostnodes :key #'second)))))
+                                    ;; the case that a node (cur-item) that is not
+                                    ;; a leaf node has LOST. If such node has not
+                                    ;; yet lost, then it will be recursively processed.
+                                    (list-by-det
+                                      (cons t (car (member order lostnodes :key #'second)))
+                                      (cons cur-item-available? cur-item)))
                                    (t (list (rec (nth order node) (cons order route)))))))
                          (iota (max (1+ (apply #'max 0 (mapcar #'second lostnodes)) )
                                     nodelength
@@ -208,32 +206,22 @@
              (list (car (member '(0) lostnode-lst :key #'drop :test #'equal)) refdiff))
            (t (rec refdiff (list 0))))))
 
-(reduce (lambda (item partial)
-          (if (car item)
-            (cons (cdr item) partial)
-            partial))
-        (list (cons (evenp 0) 20) (cons (evenp 1) 10) (cons (evenp 3) 30))
-        :initial-value ()
-        :from-end t)
+(defun list-by-det (&rest det-item-pairs)
+  " det-item-pairs : a list of pairs whose CAR determines if the
+    CDR element should be included in the returned list."
+  (reduce (lambda (pair partial)
+            (if (car pair)
+              (cons (cdr pair) partial)
+              partial))
+          det-item-pairs
+          :initial-value ()
+          :from-end t))
 
-(condlist ((member order lostnodes :key #'second)
-                (list (car (member order lostnodes :key #'second))))
-               ((and cur-item-available?
-                     (or (atom cur-item) (%refnode-p cur-item)) cur-item))
-               (t (rec (nth order node) (cons order route))))
-
-(reduce (lambda (cond-item partial)
-          (if (car cond-item)
-            (cons (cdr cond-item) partial)
-            partial))
-        (list (cons (member order lostnodes :key #'second)
-                    (car (member order lostnodes :key #'second)))
-               (cons (and cur-item-available?
-                          (or (atom cur-item) (%refnode-p cur-item)))
-                     cur-item)
-               (t (rec (nth order node) (cons order route))))
-        :initial-value ()
-        :from-end t)
+(list-by-det
+  (cons (evenp 0) 20)
+  (cons (evenp 1) 10)
+  (cons (evenp 3) 30)
+  (cons (evenp 4) 40))
 
 (defun refnode-p (node refmark)
   (and (proper-list-p node) (eq (car node) refmark)))
