@@ -263,17 +263,3 @@
                        (t (composed-of-newnodes-p node refmark lostmark)))))
           tree
           :initial-value t))
-
-(defun wrap-by-bracket (expr)
-  (list '[ expr ']))
-
-(defun wrap-by-brace (expr)
-  (list '{ expr '}))
-
-(defun bracebracket (base modified &optional (allowed-distance 0))
-  (with-gensyms (refmark lostmark)
-    (apply-modifiednode-converters
-      (stdiff base modified refmark lostmark allowed-distance)
-      base refmark lostmark #'wrap-by-brace #'wrap-by-bracket)))
-
-;(bracebracket *first-impl* *second-impl*)
