@@ -237,13 +237,18 @@
 ;               lost-subtrees
 ;               (merge-lost newnode-detected-diff lost-subtrees 'ref))
 
-;;; The structure retuned from STDIFF is called ``raw-diff'' or simply ``diff.''
-(defun stdiff (base modified &optional (refmark (gensym "REF"))
-                    (lostmark (gensym "LOST")) (allowed-distance 0))
+;;; The structure retuned from RAWDIFF is called ``rawdiff''.
+(defun rawdiff (base modified refmark lostmark &optional (allowed-distance 0))
   (let ((refdiff (rdiff base modified refmark allowed-distance)))
     (merge-lost refdiff
                 (lostnode-list refdiff base refmark lostmark)
                 refmark)))
+
+;;; The structure returned from DIFF is called ``diff.''
+;;; The contents is identical to rawdiff for now.
+(defun diff (base modified &optional (refmark (gensym "REF"))
+                 (lostmark (gensym "LOST")) (allowed-distance 0))
+  (rawdiff base modified refmark lostmark allowed-distance))
 
 (defun apply-modifiednode-converters (rawdiff base refmark lostmark newnode-converter lostnode-converter)
   (with-route (cur route) rawdiff
