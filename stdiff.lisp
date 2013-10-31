@@ -250,8 +250,7 @@
     (cond ((refnode-p cur refmark) (retrieve-by-route base (route-normalize (drop cur))))
           ((lostnode-p cur lostmark) (funcall lostnode-converter
                                              (retrieve-by-route base (route-normalize (drop cur)))))
-          ((atom cur) (funcall newnode-converter cur))
-          ((composed-of-newnodes-p cur refmark lostmark)
+          ((or (atom cur) (composed-of-newnodes-p cur refmark lostmark))
            (funcall newnode-converter cur))
           (t next-level))))
 
