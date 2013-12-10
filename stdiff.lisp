@@ -250,14 +250,40 @@
                  (lostmark (gensym "LOST")) (allowed-distance 0))
   (rawdiff base modified refmark lostmark allowed-distance))
 
-(defun apply-modifiednode-converters (rawdiff base refmark lostmark newnode-converter lostnode-converter)
+;;; A converter is a 3 parameter function. It takes node, route, and
+;;; codelet. A converter should return a codelet
+;;; Currently, node and codelet are completely same for new nodes
+;;; because there is no special format for new node in diff. In order to
+;;; achieve a suite a certain consistensy, it is good to introduce a
+;;; special data structure for new node, too.  Moreover, nodes can
+;;; be expressed as a class.
+(defun apply-converters (rawdiff base refmark lostmark newnode-converter lostnode-converter refnode-converter)
   (with-route (cur route) rawdiff
-    (cond ((refnode-p cur refmark) (retrieve-by-route base (route-normalize (drop cur))))
-          ((lostnode-p cur lostmark) (funcall lostnode-converter
-                                             (retrieve-by-route base (route-normalize (drop cur)))))
-          ((or (atom cur) (composed-of-newnodes-p cur refmark lostmark))
-           (funcall newnode-converter cur))
+    (cond ((refnode-p cur refmark)
+           (funcall refnode-converter cur route
+                    (retrieve-by-route base (route-normalize (drop cur)))))
+          ((lostnode-p cur lostmark)
+           (funcall lostnode-converter cur route
+                    (retrieve-by-route base (route-normalize (drop cur)))))
+          ((newnode-p cur refmark lostmark)
+           (funcall newnode-converter cur route cur))
           (t next-level))))
+
+;;; An easy-converter takes a codelet as its only argument.
+(defun apply-modifiednode-converters
+  (rawdiff base refmark lostmark newnode-easy-converter lostnode-easy-converter)
+  (macrolet ((gen-convereter (easy-converter)
+               `(lambda (node route codelet)
+                  (declare (ignore node route))
+                  (funcall ,easy-converter codelet))))
+    (apply-converters
+      rawdiff base refmark lostmark
+      (gen-convereter newnode-easy-converter)
+      (gen-convereter lostnode-easy-converter)
+      (gen-convereter #'identity))))
+
+(defun newnode-p (node refmark lostmark)
+  (or (atom node) (composed-of-newnodes-p node refmark lostmark)))
 
 (defun composed-of-newnodes-p (tree refmark lostmark)
   (reduce (lambda (acc node)

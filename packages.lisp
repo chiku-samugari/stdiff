@@ -1,3 +1,3 @@
 (defpackage :stdiff
   (:use :cl :chiku.util)
-  (:export :diff :apply-modifiednode-converters))
+  (:export :diff :apply-modifiednode-converters :apply-converters))
