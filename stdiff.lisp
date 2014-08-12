@@ -157,7 +157,7 @@
   (let ((refnodes (refnode-list refdiff refmark))
         result)
     (with-route (sub route) base
-      (cond ((find route refnodes :test #'equal) (cons refmark route))
+      (cond ((find route refnodes :test #'equal) nil)
             ((find-if #'(start-with (route-normalize route) (route-normalize _))
                       refnodes)
              next-level)
