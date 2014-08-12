@@ -14,7 +14,7 @@
 (defun bracebracket (base modified &optional (allowed-distance 0))
   (with-gensyms (refmark lostmark)
     (apply-modifiednode-converters
-      (stdiff base modified refmark lostmark allowed-distance)
+      (diff base modified refmark lostmark allowed-distance)
       base refmark lostmark #'wrap-by-brace #'wrap-by-bracket)))
 
 ;(bracebracket *first-impl* *second-impl*)
