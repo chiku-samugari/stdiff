@@ -1,4 +1,4 @@
-(in-package :stdiff)
+(in-package :stdiff-use-sample)
 
 (defvar *first-impl*
   '(defun iota (n)
