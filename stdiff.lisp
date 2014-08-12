@@ -74,11 +74,13 @@
         ((atom code) (if (equal '(0) route)
                        (values code t)
                        (values nil nil)))
-        (t (values (retrieve-by-route (nth (car route) code) (cdr route)) t))))
+        (t (retrieve-by-route (nth (car route) code) (cdr route)))))
 
 (retrieve-by-route '(a b (x (s t u) y z) c) '(2 1))
 
 (retrieve-by-route '(a b (x (s t u) y z) c) '(2 1 2 1))
+
+(retrieve-by-route '(a b) '(2))
 
 (defun route-normalize (raw-route)
   (drop (reverse raw-route)))
