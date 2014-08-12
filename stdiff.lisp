@@ -139,12 +139,11 @@
 ;  (rdiff base modified 'ref 2))
 
 (defun refnode-list (refdiff refmark)
-  (let ((result))
-    (maptree (lambda (leaf)
-               (if (not (atom leaf))
-                 (car (push (cdr leaf) result))))
+  (let (result)
+    (maptree #'(unless (atom a0)
+                 (car (push (cdr a0) result)))
              refdiff
-             :pred (lambda (x) (or (atom x) (eq (car x) refmark))))
+             :pred #'(or (atom a0) (eq (car a0) refmark)))
     result))
 
 (defun lostnode-list (refdiff base refmark lostmark)
