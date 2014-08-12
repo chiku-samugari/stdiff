@@ -1,3 +1,5 @@
+(require :stdiff)
+
 (defpackage :stdiff-use-sample
   (:use :cl :chiku.util :stdiff))
 
