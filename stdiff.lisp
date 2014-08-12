@@ -141,10 +141,6 @@
 (defun refnode-list (refdiff refmark)
   (let ((result))
     (maptree (lambda (leaf)
-               ;; Here, we need to coerce ATOMs into NIL. The MAPTREE
-               ;; implementation showed in ``Let over Lambda'' avoids
-               ;; this point by throwing away the ability to recognize
-               ;; S-expressions other than ATOMs as leaves.
                (if (not (atom leaf))
                  (car (push (cdr leaf) result))))
              refdiff
