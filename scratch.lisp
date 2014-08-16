@@ -155,3 +155,5 @@
 (bracebracket 'a 'x)
 (stdiff 'a 'x 'ref 'lost 1)
 (lost-subtree-list (rdiff 'a 'x 'ref 1) 'a 'ref 'lost)
+
+(diff (list ()) (list () () ()))
