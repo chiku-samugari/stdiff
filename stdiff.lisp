@@ -157,12 +157,12 @@
   (let ((refnodes (refnode-list refdiff refmark))
         result)
     (with-route (sub route) base
-      (cond ((find route refnodes :test #'equal) nil)
+      (cond ((find route refnodes :test #'equal) route nil)
             ((find-if #'(start-with (route-normalize route) (route-normalize _))
                       refnodes)
              next-level)
             (t (push (cons lostmark route) result))))
-      (nreverse result)))
+    (nreverse result)))
 
 ;(printing-let* ((base '(lambda (x)
 ;                         (showdiff *first-impl* *second-impl* x)
@@ -175,38 +175,38 @@
 
 (defun merge-lost (refdiff lostnode-lst refmark)
   (labels ((rec (node route)
-               (let ((lostnodes (remove-if-not (p (equal (drop _ 2) route)) lostnode-lst))
-                     (nodelength (length node)))
-                 (mapcan (lambda (order)
-                           (let* ((cur-item (nth order node))
-                                  (cur-item-available? (and cur-item (< order nodelength))))
-                             (cond ((or (atom cur-item) (%refnode-p cur-item))
-                                    (list-by-det
-                                      (let ((lost (member order lostnodes :key #'second)))
-                                        (cons lost (car lost)))
-                                      (cons cur-item-available? cur-item)))
-                                   ((member order lostnodes :key #'second)
-                                    ;; the case that a node (cur-item) that is not
-                                    ;; a leaf node has LOST. If such node has not
-                                    ;; yet lost, then it will be recursively processed.
-                                    (list-by-det
-                                      (cons t (car (member order lostnodes :key #'second)))
-                                      (cons cur-item-available? cur-item)))
-                                   (t (list (rec (nth order node) (cons order route)))))))
-                         (iota (max (1+ (apply #'max 0 (mapcar #'second lostnodes)) )
-                                    nodelength
-                                    (1+ (apply #'max 0 (filter (lambda (child)
-                                                                 (and (%refnode-p child)
-                                                                      (second child)))
-                                                               node))))))))
+             (let ((lostnodes (remove-if-not (p (equal (drop _ 2) route)) lostnode-lst))
+                   (nodelength (length node)))
+               (mapcan (lambda (order)
+                         (let* ((cur-item (nth order node))
+                                (cur-item-available? (and cur-item (< order nodelength))))
+                           (cond ((or (atom cur-item) (%refnode-p cur-item))
+                                  (list-by-det
+                                    (let ((lost (member order lostnodes :key #'second)))
+                                      (cons lost (car lost)))
+                                    (cons cur-item-available? cur-item)))
+                                 ((member order lostnodes :key #'second)
+                                  ;; the case that a node (cur-item) that is not
+                                  ;; a leaf node has LOST. If such node has not
+                                  ;; yet lost, then it will be recursively processed.
+                                  (list-by-det
+                                    (cons t (car (member order lostnodes :key #'second)))
+                                    (cons cur-item-available? cur-item)))
+                                 (t (list (rec (nth order node) (cons order route)))))))
+                       (iota (max (1+ (apply #'max 0 (mapcar #'second lostnodes)) )
+                                  nodelength
+                                  (1+ (apply #'max 0 (filter (lambda (child)
+                                                               (and (%refnode-p child)
+                                                                    (second child)))
+                                                             node))))))))
            (%refnode-p (node) (refnode-p node refmark)))
     (cond ((or (atom refdiff) (%refnode-p refdiff))
-           (aif (eql 0 (second (car lostnode-lst)))
-             (list (car lostnode-lst) refdiff)
-             refdiff))
-           ((member '(0) lostnode-lst :key #'drop :test #'equal)
-             (list (car (member '(0) lostnode-lst :key #'drop :test #'equal)) refdiff))
-           (t (rec refdiff (list 0))))))
+            (aif (eql 0 (second (car lostnode-lst)))
+              (list (car lostnode-lst) refdiff)
+              refdiff))
+          ((member '(0) lostnode-lst :key #'drop :test #'equal)
+            (list (car (member '(0) lostnode-lst :key #'drop :test #'equal)) refdiff))
+          (t (rec refdiff (list 0))))))
 
 (defun list-by-det (&rest det-item-pairs)
   " det-item-pairs : a list of pairs whose CAR determines if the
