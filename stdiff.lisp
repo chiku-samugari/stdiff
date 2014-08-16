@@ -201,7 +201,7 @@
                                                              node))))))))
            (%refnode-p (node) (refnode-p node refmark)))
     (cond ((or (atom refdiff) (%refnode-p refdiff))
-            (aif (eql 0 (second (car lostnode-lst)))
+            (if (eql 0 (second (car lostnode-lst)))
               (list (car lostnode-lst) refdiff)
               refdiff))
           ((member '(0) lostnode-lst :key #'drop :test #'equal)
