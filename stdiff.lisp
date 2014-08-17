@@ -69,21 +69,48 @@
 (defun retrieve-by-route (code route)
   " The first value is the retrieved code and the second value denotes
     if a code is detected or not."
-  (cond ((null code) (values nil nil))
-        ((null route) (values code t))
-        ((atom code) (if (equal '(0) route)
-                       (values code t)
-                       (values nil nil)))
+  (cond ((null route) (values code t))
+        ((atom code) (values nil nil))
+        ((< (maxidx code) (car route)) (values nil nil))
         (t (retrieve-by-route (nth (car route) code) (cdr route)))))
 
+(defun maxidx (lst)
+  (1- (length lst)))
+
 (retrieve-by-route '(a b (x (s t u) y z) c) '(2 1))
+
+(retrieve-by-route '(a b (x (s t u) y z) c) '(2 1 2))
 
 (retrieve-by-route '(a b (x (s t u) y z) c) '(2 1 2 1))
 
 (retrieve-by-route '(a b) '(2))
 
+(retrieve-by-route (list () ()) '(1))
+
+(retrieve-by-route (list () ()) '(0))
+
+(retrieve-by-route (list () ()) '())
+
+(retrieve-by-route (list () ()) '(2))
+
+(retrieve-by-route '(a) (route-normalize '(0 0)))
+
+(find-route 'a '(a))
+
+(find-route 'a 'a)
+
+(find-route '(a (b) c) '(a (b) c))
+
+(find-route '(a) '((a) (b) c))
+
 (defun route-normalize (raw-route)
   (drop (reverse raw-route)))
+
+(lambda (base subtree)
+  (multiple-value-bind (retrieved detected?)
+    (retrieve-by-route base (route-normalize (find-route subtree base)))
+    (and (equal retrieved subtree)
+         (eq detected? t))))
 
 (defun start-with (x y)
   (and (shorter x y)
