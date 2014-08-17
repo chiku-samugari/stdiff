@@ -262,7 +262,10 @@
 ;;; The contents is identical to rawdiff for now.
 (defun diff (base modified &optional (refmark (gensym "REF"))
                  (lostmark (gensym "LOST")) (allowed-distance 0))
-  (rawdiff base modified refmark lostmark allowed-distance))
+  (values
+    (rawdiff base modified refmark lostmark allowed-distance)
+    refmark
+    lostmark))
 
 ;;; A converter is a 3 parameter function. It takes node, route, and
 ;;; codelet. A converter should return a codelet
