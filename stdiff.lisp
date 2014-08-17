@@ -93,8 +93,6 @@
 
 (retrieve-by-route (list () ()) '(2))
 
-(retrieve-by-route '(a) (route-normalize '(0 0)))
-
 (find-route 'a '(a))
 
 (find-route 'a 'a)
