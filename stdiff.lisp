@@ -28,9 +28,6 @@
         next-level)
       result)))
 
-;(find-route '(nreverse lst) *first-impl*)
-;(find-route 'lst *first-impl*)
-
 (defun levenshtein-distance (str0 str1 &key (test #'eql))
   (if (not (shorter-or-equal str0 str1))
     (levenshtein-distance str1 str0)
@@ -57,15 +54,6 @@
                    (iota (1+ (length str1))))))
         (last1 (rec (coerce str0 'cons)))))))
 
-;(levenshtein-distance '(1) '(1))
-;(levenshtein-distance '(1 2 3) '(1 2 4))
-;(levenshtein-distance '(1 1 2 2 3 0) '(1 2 2 3 0) :test #'equal)
-;(levenshtein-distance (coerce "kitten" 'cons) (coerce "akitten" 'cons))
-;(levenshtein-distance (coerce "kitten" 'cons) (coerce "sitting" 'cons))
-;(levenshtein-distance (coerce "sitting" 'cons) (coerce "kitten" 'cons))
-;(levenshtein-distance '(a b c) '(x y z))
-;(levenshtein-distance '(a b c) '(a (x y z) c))
-
 (defun retrieve-by-route (code route)
   " The first value is the retrieved code and the second value denotes
     if a code is detected or not."
@@ -77,29 +65,6 @@
 (defun maxidx (lst)
   (1- (length lst)))
 
-(retrieve-by-route '(a b (x (s t u) y z) c) '(2 1))
-
-(retrieve-by-route '(a b (x (s t u) y z) c) '(2 1 2))
-
-(retrieve-by-route '(a b (x (s t u) y z) c) '(2 1 2 1))
-
-(retrieve-by-route '(a b) '(2))
-
-(retrieve-by-route (list () ()) '(1))
-
-(retrieve-by-route (list () ()) '(0))
-
-(retrieve-by-route (list () ()) '())
-
-(retrieve-by-route (list () ()) '(2))
-
-(find-route 'a '(a))
-
-(find-route 'a 'a)
-
-(find-route '(a (b) c) '(a (b) c))
-
-(find-route '(a) '((a) (b) c))
 
 (defun route-normalize (raw-route)
   (drop (reverse raw-route)))
@@ -113,10 +78,6 @@
 (defun start-with (x y)
   (and (shorter x y)
        (equal x (take y (length x)))))
-
-(start-with '(0 1 2) '(0 1 2 3))
-(start-with '(0 1 2) '(1 1 2 3))
-(start-with '(1 1 2) '(0 1 2 3))
 
 (defun reserve-route (route subtree ref-mark)
   (let ((reserved t))
@@ -164,14 +125,6 @@
                        (t next-level))))
              (t next-level)))))
 
-;(let* ((base '(lambda (x)
-;                (showdiff *first-impl* *second-impl* x)
-;                (write-line "br/>")))
-;       (modified '(lambda (x)
-;                    (princ x)
-;                    (print (showdiff *first-impl* *second-impl* x)))))
-;  (rdiff base modified 'ref 2))
-
 (defun refnode-list (refdiff refmark)
   (let (result)
     (maptree #'(unless (atom a0)
@@ -190,15 +143,6 @@
              next-level)
             (t (push (cons lostmark route) result))))
     (nreverse result)))
-
-;(printing-let* ((base '(lambda (x)
-;                         (showdiff *first-impl* *second-impl* x)
-;                         (write-line "br/>")))
-;                (modified '(lambda (x)
-;                             (princ x)
-;                             (print (showdiff *first-impl* *second-impl* x)))))
-;  (rdiff base modified 'ref 1)
-;  (lostnode-list (rdiff base modified 'ref 1) base 'ref 'lost))
 
 (defun merge-lost (refdiff lostnode-lst refmark)
   (labels ((rec (node route)
@@ -240,14 +184,6 @@
 
 (defun lostnode-p (node lostmark)
   (and (proper-list-p node) (eq (car node) lostmark)))
-
-;(printing-let* ((base *first-impl*)
-;                (modified *impl2*)
-;                (newnode-detected-diff  (rdiff base modified 'ref 1))
-;                (lost-subtrees (lostnode-list newnode-detected-diff base 'ref 'lost)))
-;               newnode-detected-diff
-;               lost-subtrees
-;               (merge-lost newnode-detected-diff lost-subtrees 'ref))
 
 ;;; The structure retuned from RAWDIFF is called ``rawdiff''.
 (defun rawdiff (base modified refmark lostmark &optional (allowed-distance 0))

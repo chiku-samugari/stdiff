@@ -1,0 +1,57 @@
+(in-package :stdiff)
+
+(load "impls.lisp")
+
+(find-route '(nreverse lst) *first-impl*)
+(find-route 'lst *first-impl*)
+(find-route 'a '(a))
+(find-route 'a 'a)
+(find-route '(a (b) c) '(a (b) c))
+(find-route '(a) '((a) (b) c))
+
+(levenshtein-distance '(1) '(1))
+(levenshtein-distance '(1 2 3) '(1 2 4))
+(levenshtein-distance '(1 1 2 2 3 0) '(1 2 2 3 0) :test #'equal)
+(levenshtein-distance (coerce "kitten" 'cons) (coerce "akitten" 'cons))
+(levenshtein-distance (coerce "kitten" 'cons) (coerce "sitting" 'cons))
+(levenshtein-distance (coerce "sitting" 'cons) (coerce "kitten" 'cons))
+(levenshtein-distance '(a b c) '(x y z))
+(levenshtein-distance '(a b c) '(a (x y z) c))
+
+(retrieve-by-route '(a b (x (s t u) y z) c) '(2 1))
+(retrieve-by-route '(a b (x (s t u) y z) c) '(2 1 2))
+(retrieve-by-route '(a b (x (s t u) y z) c) '(2 1 2 1))
+(retrieve-by-route '(a b) '(2))
+(retrieve-by-route (list () ()) '(1))
+(retrieve-by-route (list () ()) '(0))
+(retrieve-by-route (list () ()) '())
+(retrieve-by-route (list () ()) '(2))
+
+(start-with '(0 1 2) '(0 1 2 3))
+(start-with '(0 1 2) '(1 1 2 3))
+(start-with '(1 1 2) '(0 1 2 3))
+
+(let* ((base '(lambda (x)
+                (showdiff *first-impl* *second-impl* x)
+                (write-line "br/>")))
+       (modified '(lambda (x)
+                    (princ x)
+                    (print (showdiff *first-impl* *second-impl* x)))))
+  (rdiff base modified 'ref 2))
+
+(printing-let* ((base '(lambda (x)
+                         (showdiff *first-impl* *second-impl* x)
+                         (write-line "br/>")))
+                (modified '(lambda (x)
+                             (princ x)
+                             (print (showdiff *first-impl* *second-impl* x)))))
+  (rdiff base modified 'ref 1)
+  (lostnode-list (rdiff base modified 'ref 1) base 'ref 'lost))
+
+(printing-let* ((base *first-impl*)
+                (modified *impl2*)
+                (newnode-detected-diff  (rdiff base modified 'ref 1))
+                (lost-subtrees (lostnode-list newnode-detected-diff base 'ref 'lost)))
+               newnode-detected-diff
+               lost-subtrees
+               (merge-lost newnode-detected-diff lost-subtrees 'ref))
