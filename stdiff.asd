@@ -4,12 +4,13 @@
 (in-package :stdiff.asd)
 
 (defsystem :stdiff
-  :version "0.4.0"
+  :version "0.6.0"
   :maintainer "Takehiko Nawata"
   :author "Takehiko Nawata"
   :license "MIT License"
   :description "STDIFF"
-  :long-description "STDIFF : Syntax tree diff for Common Lisp."
+  :long-description "STDIFF : Syntax tree diff."
+  :depends-on (:chiku.util :papply)
   :serial t
   :components ((:file "packages")
                (:file "stdiff")))
