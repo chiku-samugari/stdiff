@@ -36,3 +36,19 @@
 (load "impls.lisp")
 
 (show-stdiff-cl *first-impl* *third-impl* "tmp.html")
+
+(show-stdiff-cl '(defmacro list/det% (&body clauses)
+                   (if clauses
+                     (let ((head (car clauses)))
+                       `(if ,(car head)
+                          (cons ,(cadr head) (list/det% ,@(cdr clauses)))
+                          (list/det% ,@(cdr clauses))))))
+                '(defmacro list/det% (&body clauses)
+                   (if clauses
+                     (let ((head (car clauses)))
+                       (if (eq (car head) t)
+                         `(cons ,(cadr head) (list/det% ,@(cdr clauses)))
+                         `(if ,(car head)
+                            (cons ,(cadr head) (list/det% ,@(cdr clauses)))
+                            (list/det% ,@(cdr clauses)))))))
+                "list-with-determiner.html" 1)
