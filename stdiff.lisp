@@ -244,8 +244,8 @@
 ;;; achieve a suite a certain consistensy, it is good to introduce a
 ;;; special data structure for new node, too.  Moreover, nodes can
 ;;; be expressed as a class.
-(defun apply-converters (rawdiff base refmark lostmark newnode-converter lostnode-converter refnode-converter)
-  (with-route (cur route) rawdiff
+(defun apply-converters (diff base refmark lostmark newnode-converter lostnode-converter refnode-converter)
+  (with-route (cur route) diff
     (cond ((refnode-p cur refmark)
            (funcall refnode-converter cur route
                     (retrieve-by-route base (route-normalize (drop cur)))))
@@ -258,13 +258,13 @@
 
 ;;; An easy-converter takes a codelet as its only argument.
 (defun apply-modifiednode-converters
-  (rawdiff base refmark lostmark newnode-easy-converter lostnode-easy-converter)
+  (diff base refmark lostmark newnode-easy-converter lostnode-easy-converter)
   (macrolet ((gen-convereter (easy-converter)
                `(lambda (node route codelet)
                   (declare (ignore node route))
                   (funcall ,easy-converter codelet))))
     (apply-converters
-      rawdiff base refmark lostmark
+      diff base refmark lostmark
       (gen-convereter newnode-easy-converter)
       (gen-convereter lostnode-easy-converter)
       (gen-convereter #'identity))))
