@@ -150,7 +150,7 @@
                    (nodelength (length node)))
                (mapcan (lambda (order)
                          (let* ((cur-item (nth order node))
-                                (cur-item-available? (or cur-item (< order nodelength))))
+                                (cur-item-available? (< order nodelength)))
                            (cond ((or (atom cur-item) (%refnode-p cur-item))
                                   (let ((lost (member order lostnodes :key #'second)))
                                     (list/det
