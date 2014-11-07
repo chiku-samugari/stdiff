@@ -69,12 +69,6 @@
 (defun route-normalize (raw-route)
   (drop (reverse raw-route)))
 
-(lambda (base subtree)
-  (multiple-value-bind (retrieved detected?)
-    (retrieve-by-route base (route-normalize (find-route subtree base)))
-    (and (equal retrieved subtree)
-         (eq detected? t))))
-
 (defun start-with (x y)
   (and (shorter x y)
        (equal x (take y (length x)))))
