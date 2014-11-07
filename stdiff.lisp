@@ -162,7 +162,7 @@
                                   (list/det
                                     (t (car (member order lostnodes :key #'second)))
                                     (cur-item-available? cur-item)))
-                                 (t (list (rec (nth order node) (cons order route)))))))
+                                 (t (list (rec cur-item (cons order route)))))))
                        (iota (max (1+ (apply #'max 0 (mapcar #'second lostnodes)) )
                                   nodelength
                                   (1+ (apply #'max 0 (filter (lambda (child)
