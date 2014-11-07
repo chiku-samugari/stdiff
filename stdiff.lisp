@@ -157,9 +157,8 @@
                                       (lost (car lost))
                                       (cur-item-available? cur-item))))
                                  ((member order lostnodes :key #'second)
-                                  ;; the case that a node (cur-item) that is not
-                                  ;; a leaf node has LOST. If such node has not
-                                  ;; yet lost, then it will be recursively processed.
+                                  ;; Node is lost but not replaced by a
+                                  ;; new node.
                                   (list/det
                                     (t (car (member order lostnodes :key #'second)))
                                     (cur-item-available? cur-item)))
