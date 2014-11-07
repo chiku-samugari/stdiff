@@ -130,7 +130,7 @@
     (maptree #'(unless (atom a0)
                  (car (push (cdr a0) result)))
              refdiff
-             :pred #'(or (atom a0) (eq (car a0) refmark)))
+             :pred #'(or (atom a0) (refnode-p a0 refmark)))
     result))
 
 (defun lostnode-list (refdiff base refmark lostmark)
