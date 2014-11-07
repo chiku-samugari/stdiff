@@ -157,3 +157,26 @@
 (lost-subtree-list (rdiff 'a 'x 'ref 1) 'a 'ref 'lost)
 
 (diff (list ()) (list () () ()))
+
+(printing-let* ((dist 5)
+                (base '(a (x y ((((w) b) c) d)) s ((u))))
+                (modified '(a z w u))
+                (refdiff (rdiff base modified 'ref dist))
+                (lostnodes (lostnode-list (rdiff base modified 'ref dist) base 'ref 'lost)))
+  lostnodes
+  (mapcar #'(retrieve-by-route base (route-normalize (drop _)))
+          lostnodes)
+  refdiff
+  (merge-lost refdiff lostnodes 'ref)
+  (stdiff-cl:stdiff-terminal base modified dist))
+
+(printing-let* ((dist 2) (base '(a (x y z w) ((b)))) (modified '(a (y))))
+  (stdiff-cl:stdiff-terminal base modified dist))
+
+(printing-let* ((dist 2) (base '(a (x y z w))) (modified '(a y)))
+  (stdiff-cl:stdiff-terminal base modified dist))
+
+(printing-let* ((dist 2) (base '(a b (k (x y z w)))) (modified '(a y))
+                         (lostnodes (lostnode-list (rdiff base modified 'ref dist) base 'ref 'lost)))
+  lostnodes
+  (stdiff-cl:stdiff-terminal base modified dist))

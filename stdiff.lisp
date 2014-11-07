@@ -144,26 +144,50 @@
             (t (push (cons lostmark route) result))))
     (nreverse result)))
 
+;; rroute denotes ``raw-route''
+(defun rroute<-node (node)
+  (drop node))
+
+;; nroute denotes ``normalized route''
+(defun nroute<-node (node)
+  (route-normalize (rroute<-node node)))
+
 (defun merge-lost (refdiff lostnode-lst refmark)
   (labels ((rec (node route)
-             (let ((lostnodes (remove-if-not (p (equal (drop _ 2) route)) lostnode-lst))
-                   (nodelength (length node)))
+             (let* ((near-lostnodes (remove-if-not (p (equal (drop (rroute<-node _)) route)) lostnode-lst))
+                    (lost-kindreds (remove-if-not #'(start-with (route-normalize route)
+                                                          (nroute<-node _))
+                                            lostnode-lst))
+                    (far-lostnodes (set-difference lost-kindreds near-lostnodes :test #'equal))
+                    (nodelength (length node))
+                    (depth (length (route-normalize route))))
+               (format t "~&ROUTE ~A [cf. depth = ~D]~%" route depth)
+               (format t "NEAR LOSTNODES: ~A~%" near-lostnodes)
+               (format t "LOST KINDREDS ~A~%" lost-kindreds)
+               (format t "FAR LOSTNODES ~A~%" far-lostnodes)
                (mapcan (lambda (order)
                          (let* ((cur-item (nth order node))
-                                (cur-item-available? (< order nodelength)))
+                                (cur-item-available? (< order nodelength))
+                                (orphans (remove-if-not #'(eql (nth depth (nroute<-node _)) order)
+                                                             far-lostnodes)))
+                           (format t "ORPHANS: ~A~%" orphans)
                            (cond ((or (atom cur-item) (%refnode-p cur-item))
-                                  (let ((lost (member order lostnodes :key #'second)))
+                                  (let ((lost (member order near-lostnodes :key #'second)))
                                     (list/det
                                       (lost (car lost))
+                                      (orphans (rec nil (cons order route)))
                                       (cur-item-available? cur-item))))
-                                 ((member order lostnodes :key #'second)
+                                 ((member order near-lostnodes :key #'second)
                                   ;; Node is lost but not replaced by a
                                   ;; new node.
                                   (list/det
-                                    (t (car (member order lostnodes :key #'second)))
+                                    (t (car (member order near-lostnodes :key #'second)))
                                     (cur-item-available? cur-item)))
-                                 (t (list (rec cur-item (cons order route)))))))
-                       (iota (max (1+ (apply #'max 0 (mapcar #'second lostnodes)) )
+                                 (t (list (rec (if (atom cur-item)
+                                                 nil ; in order to process orphans.
+                                                 cur-item)
+                                               (cons order route)))))))
+                       (iota (max (1+ (apply #'max 0 (mapcar #'(nth depth (nroute<-node _)) lost-kindreds)))
                                   nodelength
                                   (1+ (apply #'max 0 (filter (lambda (child)
                                                                (and (%refnode-p child)
