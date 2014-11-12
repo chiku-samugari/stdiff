@@ -65,22 +65,21 @@
 (defun maxidx (lst)
   (1- (length lst)))
 
-
-(defun route-normalize (raw-route)
-  (drop (reverse raw-route)))
+(defun route-normalize (rroute)
+  (drop (reverse rroute)))
 
 (defun start-with (x y)
   (and (shorter x y)
        (equal x (take y (length x)))))
 
-(defun reserve-route (route subtree ref-mark)
+(defun reserve-route (rroute subtree ref-mark)
   (let ((reserved t))
-    (dlambda (:route () (route-normalize route))
-             (:resolve () (if reserved (cons ref-mark route) subtree))
+    (dlambda (:route () (route-normalize rroute))
+             (:resolve () (if reserved (cons ref-mark rroute) subtree))
              (:cancel () (setf reserved nil)))))
 
-(defun in-reserved-list (route reserved-list)
-  (let ((route (route-normalize route)))
+(defun in-reserved-list (rroute reserved-list)
+  (let ((route (route-normalize rroute)))
     (some #'(let ((reserved-route (funcall _ :route)))
               (or (start-with route reserved-route)
                   (start-with reserved-route route)))
