@@ -86,7 +86,7 @@
           reserved-list)))
 
 ;;; RDIFF function returns a diff format called ``refdiff''
-(defun rdiff (base modified refmark &optional (allowed-distance 0))
+(defun rdiff (base modified refmark allowed-distance)
   (with-route (node r) (rdiff% base modified refmark allowed-distance)
     (cond ((functionp node) (funcall node :resolve))
           ((atom node) node)
