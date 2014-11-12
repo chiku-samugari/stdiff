@@ -11,8 +11,8 @@
 (defmacro with-route ((subtree-var route-var) tree &body body)
   (with-gensyms (rec idx subtree)
     `(symbol-macrolet ((next-level (if (proper-list-p ,subtree-var)
-                                     (loop for ,idx = 0 then (1+ ,idx)
-                                           for ,subtree in ,subtree-var
+                                     (loop :for ,idx = 0 :then (1+ ,idx)
+                                           :for ,subtree :in ,subtree-var
                                            collect (,rec ,subtree
                                                     (cons ,idx ,route-var)))
                                      ,subtree-var)))
