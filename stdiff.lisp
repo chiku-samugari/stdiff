@@ -20,6 +20,28 @@
                   ,@body))
          (,rec ,tree (list 0))))))
 
+(defmacro traverse/route (var-tree-pairs route-var invalid-p-name style &body body)
+  (with-gensyms (rec order maxorder invalid-node)
+    (let* ((variables (mapcar #'car var-tree-pairs))
+           (sub-vars (mapcar #'(gensym (concat-str "SUB-" (string _))) variables)))
+      `(let ((,invalid-node (gensym)))
+         (labels ((,invalid-p-name (node)
+                    (eq node ,invalid-node)))
+           (symbol-macrolet ((next-level
+                               (if (,(case style
+                                       (:union 'or)
+                                       (:intersection 'and)
+                                       (t style))
+                                     ,@(mapcar #`(proper-list-p ,a0) variables))
+                                 (let ((,maxorder (max ,@(mapcar #`(length (check #'listp ,a0)) variables))))
+                                   (loop :for ,order = 0 :then (1+ ,order)
+                                         ,@(mapcan #2`(:for ,a0 :in (fillin (check #'listp ,a1) ,maxorder ,invalid-node))
+                                                   sub-vars variables)
+                                         :collect (,rec ,@sub-vars (cons ,order ,route-var)))))))
+             (labels ((,rec (,@variables ,route-var)
+                        ,@body))
+               (,rec ,@(mapcar #'second var-tree-pairs) (list 0)))))))))
+
 (defun find-route (subtree code)
   (let (result)
     (with-route (diff route) code
@@ -72,10 +94,15 @@
   (and (shorter x y)
        (equal x (take y (length x)))))
 
-(defun reserve-route (rroute subtree ref-mark)
+(defun start-with-or-equal (x y)
+  (or (equal x y) (start-with x y)))
+
+;; TODO: subtree is not used at all.
+(defun reserve-route (rroute found-rroute subtree mark)
   (let ((reserved t))
     (dlambda (:route () (route-normalize rroute))
-             (:resolve () (if reserved (cons ref-mark rroute) subtree))
+             (:resolve () (if reserved (cons mark rroute) subtree))
+             (:found-rroute () found-rroute)
              (:cancel () (setf reserved nil)))))
 
 (defun in-reserved-list (rroute reserved-list)
@@ -87,12 +114,46 @@
 
 ;;; RDIFF function returns a diff format called ``refdiff''
 (defun rdiff (base modified refmark allowed-distance)
-  (with-route (node r) (rdiff% base modified refmark allowed-distance)
+  (with-route (node r) (rdiff% base modified refmark :came-from allowed-distance)
     (cond ((functionp node) (funcall node :resolve))
           ((atom node) node)
           (t next-level))))
 
-(defun rdiff% (base modified refmark allowed-distance)
+(defun rdiff% (base modified refmark camemark allowed-distance)
+  ;; TODO: The word ``reserve'' is no more proper, I feel. Almost all
+  ;; nodes are registered into the list and referred during the
+  ;; construction of ``refdiff''. Therefore, I feel ``book'' is more
+  ;; properer.
+  (let (reserved-routes)
+    (labels ((reserve (route found node mark)
+               ;; TODO: What should happen if a LOST reserved node or a
+               ;; child of such node is later tried to be reserved?
+               ;; TODO: What should happen if some of children of the
+               ;; booking node is reserved as LOST?
+               ;; TODO: What should happen if a larger reservation is
+               ;; already established?
+               (aand (smaller-reservations route)
+                     (mapc #'(funcall _ :cancel) it))
+               (aand (booked-as-lost route)
+                     )
+               (car (push (reserve-route route found node mark) reserved-routes)))
+             (smaller-reservations (route)
+               (remove-if-not #'(start-with (route-normalize route) (funcall _ :route))
+                              reserved-routes)))
+      (traverse/route ((bnode base) (mnode modified)) route invalid-p :union
+        (cond ((and (not (invalid-p mnode)) (not (invalid-p bnode)))
+               (acond ((equal mnode bnode) (reserve route route bnode refmark))
+                      ((some #'(and (<= (levenshtein-distance route a0) allowed-distance) a0)
+                             (find-route mnode base))
+                       (reserve it route mnode camemark))
+                      (t next-level)))
+              ((invalid-p bnode) mnode)
+              ((invalid-p mnode)
+               (aif (find-if #'(equal (funcall _ :route) (route-normalize route)) reserved-routes)
+                 (car (push (reserve-route  (funcall it :found-rroute) route bnode :wentto) reserved-routes))
+                 (reserve route route bnode :lost))))))))
+
+#+nil(defun rdiff% (base modified refmark allowed-distance)
   (let (reserved-routes)
     (with-route (cur route) modified
       (acond ((multiple-value-bind (code detected)
