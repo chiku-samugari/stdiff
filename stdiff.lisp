@@ -203,8 +203,6 @@
                      (t (error t "~&Something wrong!~%")))
                    (car (push (route-booking lostmark rroute node) basebook)))))
              (stack-ref-booking (cited node cont cur)
-               ;; It is safe to use NIL to denote the CITED and CUR are
-               ;; same, because raw-route will never be NIL.
                (and cur (push (route-booking citedmark cur node nil cited) basebook))
                (car (push (route-booking refmark cited node cont) modbook))))
       (symbol-macrolet ((cont (lambda () next-level)))
