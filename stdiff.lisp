@@ -205,7 +205,7 @@
              (stack-ref-booking (cited node cont cur)
                ;; It is safe to use NIL to denote the CITED and CUR are
                ;; same, because raw-route will never be NIL.
-               (and cur (car (push (route-booking citedmark cur node nil cited) basebook)))
+               (and cur (push (route-booking citedmark cur node nil cited) basebook))
                (car (push (route-booking refmark cited node cont) modbook))))
       (symbol-macrolet ((cont (lambda () next-level)))
         (traverse/route ((bnode base) (mnode modified)) (rroute invalid-p)
