@@ -178,8 +178,9 @@
                                                      (route-normalize cited) modbook))
                        (stack-ref-booking cited node cont cur))
                      (:direct (cond ((eq mark lostmark)
-                                     (funcall booking :cancel)
-                                     (stack-ref-booking cited node cont cur))
+                                     (funcall booking :cancel
+                                              (car (push (route-booking citedmark cur node nil cited) basebook)))
+                                     (car (push (route-booking refmark cited node cont) modbook)))
                                     ((eq mark citedmark) (funcall cont))))
                      (:indirect (cond ((eq mark lostmark)
                                        (funcall booking :cancel
