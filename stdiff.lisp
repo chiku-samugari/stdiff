@@ -20,12 +20,12 @@
                   ,@body))
          (,rec ,tree ,initial-route)))))
 
-(defmacro traverse/route (var-tree-pairs (route-var invalid-p-name &optional (style :union)) &body body)
-  (with-gensyms (rec order maxorder invalid-node)
+(defmacro traverse/route (var-tree-pairs (route-var invalid-node &optional (style :union)) &body body)
+  (with-gensyms (rec order maxorder)
     (let* ((variables (mapcar #'car var-tree-pairs))
            (sub-vars (mapcar #'(gensym (concat-str "SUB-" (string _))) variables)))
       `(let ((,invalid-node (gensym)))
-         (labels ((,invalid-p-name (node)
+         (labels ((,(intern (concat-str (symbol-name invalid-node) "-P")) (node)
                     (eq node ,invalid-node)))
            (symbol-macrolet ((next-level
                                (if (,(case style
@@ -34,10 +34,11 @@
                                        (t style))
                                      ,@(mapcar #`(proper-list-p ,a0) variables))
                                  (let ((,maxorder (max ,@(mapcar #`(length (check #'listp ,a0)) variables))))
-                                   (loop :for ,order = 0 :then (1+ ,order)
-                                         ,@(mapcan #2`(:for ,a0 :in (fillin (check #'listp ,a1) ,maxorder ,invalid-node))
-                                                   sub-vars variables)
-                                         :collect (,rec ,@sub-vars (cons ,order ,route-var)))))))
+                                   (remove ,invalid-node
+                                           (loop :for ,order = 0 :then (1+ ,order)
+                                                 ,@(mapcan #2`(:for ,a0 :in (fillin (check #'listp ,a1) ,maxorder ,invalid-node))
+                                                           sub-vars variables)
+                                                 :collect (,rec ,@sub-vars (cons ,order ,route-var))))))))
              (labels ((,rec (,@variables ,route-var)
                         ,@body))
                (,rec ,@(mapcar #'second var-tree-pairs) (list 0)))))))))
