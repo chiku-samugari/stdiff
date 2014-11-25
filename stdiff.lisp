@@ -239,7 +239,7 @@
                    (acond ((find-ref-candidates mnode rroute allowed-distance base)
                            (booking-as-ref it mnode cont rroute))
                           ((proper-list-p mnode) next-level)
-                          (t (list mnode))))
+                          (t mnode)))
                   ((invalid-p mnode)
                    (booking-as-lost rroute bnode)
                    invalid)))
