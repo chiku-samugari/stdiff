@@ -166,7 +166,7 @@
 
 (defun rdiff% (base modified refmark lostmark citedmark allowed-distance)
   (let (basebook modbook)
-    (labels ((booking-as-ref (cited node cont &optional cur)
+    (labels ((booking-as-ref (cited node cont cur)
                (multiple-value-bind (booking relation mark)
                  (check-booking cited basebook)
                  (if booking
@@ -207,7 +207,7 @@
                                     ((nil) (push (route-booking lostmark subrroute subnode) basebook)))))))
                    (push (route-booking lostmark rroute node) basebook))))
              (stack-ref-booking (cited node cont cur)
-               (and cur (push (route-booking citedmark cur node nil cited) basebook))
+               (push (route-booking citedmark cur node nil cited) basebook)
                (car (push (route-booking refmark cited node cont) modbook))))
       (symbol-macrolet ((cont (lambda () (if (proper-list-p mnode)
                                            next-level
@@ -215,7 +215,7 @@
         (traverse/route ((bnode base) (mnode modified)) (rroute invalid-p)
           (cond ((and (not (invalid-p mnode)) (not (invalid-p bnode)))
                  (acond ((equal mnode bnode)
-                         (booking-as-ref rroute bnode cont))
+                         (booking-as-ref rroute bnode cont rroute))
                         ((find-ref-candidates mnode rroute allowed-distance base)
                          (booking-as-lost rroute bnode)
                          (booking-as-ref it mnode cont rroute))
