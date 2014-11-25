@@ -14,7 +14,7 @@
                                      (loop :for ,idx = 0 :then (1+ ,idx)
                                            :for ,subtree :in ,subtree-var
                                            collect (,rec ,subtree
-                                                    (cons ,idx ,route-var)))
+                                                         (cons ,idx ,route-var)))
                                      ,subtree-var)))
        (labels ((,rec (,subtree-var ,route-var)
                   ,@body))
