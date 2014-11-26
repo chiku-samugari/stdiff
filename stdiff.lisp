@@ -6,7 +6,7 @@
 (in-package :stdiff)
 
 (defun proper-list-p (obj)
-  (and (listp obj) (null (cdr (last obj)))))
+  (and (consp obj) (null (cdr (last obj)))))
 
 (defmacro with-route ((subtree-var route-var &optional (initial-route '(list 0))) tree &body body)
   (with-gensyms (rec idx subtree)
