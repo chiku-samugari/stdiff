@@ -141,9 +141,9 @@
         ((start-with y x) :indirect)
         ((start-with x y) :partly)))
 
-(defun collect-partly-bookings (route book routecat)
+(defun collect-partly-bookings (route book fieldspec)
   (remove-if-not #'(and (funcall a0 :valid?)
-                        (start-with route (funcall a0 routecat)))
+                        (start-with route (funcall a0 fieldspec)))
                  book))
 
 (defun check-booking (rroute basebook)
@@ -167,8 +167,9 @@
                    (case relation
                      (:partly
                        (mapc #'(funcall _ :cancel) booking)
-                       (mapc #'(funcall _ :cancel) (collect-partly-bookings
-                                                     (route-normalize cited) modbook :route))
+                       (mapc #'(funcall _ :cancel)
+                             (collect-partly-bookings
+                               (route-normalize cited) modbook :route))
                        (stack-ref-booking cited node cont cur))
                      (:direct (cond ((eq mark lostmark)
                                      (funcall booking :cancel)
