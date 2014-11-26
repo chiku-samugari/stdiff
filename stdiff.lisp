@@ -113,12 +113,13 @@
                 (funcall cont))))))
 
 ;;; The structure retuned from RAWDIFF is called ``rawdiff''.
-(defun rawdiff (base modified allowed-distance newmark refmark lostmark citedmark)
-  (multiple-value-bind (modbook basebook)
-    (rdiff% base modified allowed-distance newmark refmark lostmark citedmark)
-    (values
-      (rawdiff<-book modified modbook)
-      (rawdiff<-book base basebook))))
+(export
+  (defun rawdiff (base modified allowed-distance newmark refmark lostmark citedmark)
+    (multiple-value-bind (modbook basebook)
+      (rdiff% base modified allowed-distance newmark refmark lostmark citedmark)
+      (values
+        (rawdiff<-book modified modbook)
+        (rawdiff<-book base basebook)))))
 
 (defun find-ref-candidates (tree rroute allowed-distance base)
   (some #'(and (<= (levenshtein-distance rroute a0) allowed-distance) a0)
