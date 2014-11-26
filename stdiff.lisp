@@ -257,14 +257,18 @@
 (defun lostnode-p (node lostmark)
   (and (proper-list-p node) (eq (car node) lostmark)))
 
+(defun citednode-p (node citedmark)
+  (and (proper-list-p node) (eq (car node) citedmark)))
+
 ;;; The structure returned from DIFF is called ``diff.''
 ;;; The contents is identical to rawdiff for now.
-(defun diff (base modified &optional (refmark (gensym "REF"))
-                 (lostmark (gensym "LOST")) (allowed-distance 0))
-  (values
-    (rawdiff base modified refmark lostmark allowed-distance)
-    refmark
-    lostmark))
+(defun diff (base modified allowed-distance
+                    &optional (refmark (gensym "REF"))
+                    (lostmark (gensym "LOST"))
+                    (citedmark (gensym "CITED")))
+  (mvidentity
+    (rawdiff base modified refmark lostmark citedmark allowed-distance)
+    refmark lostmark citedmark))
 
 ;;; A converter is a 3 parameter function. It takes node, route, and
 ;;; codelet. A converter should return a codelet
