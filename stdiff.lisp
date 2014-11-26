@@ -301,14 +301,19 @@
   (route-normalize (drop node)))
 
 ;;; An easy-converter takes a codelet as its only argument.
-(defun apply-modifiednode-converters
-  (diff base refmark lostmark newnode-easy-converter lostnode-easy-converter)
-  (macrolet ((gen-convereter (easy-converter)
-               `(lambda (node route codelet)
-                  (declare (ignore node route))
-                  (funcall ,easy-converter codelet))))
-    (apply-converters
-      diff base refmark lostmark
-      (gen-convereter newnode-easy-converter)
-      (gen-convereter lostnode-easy-converter)
-      (gen-convereter #'identity))))
+(export
+  (defun apply-easy-converters
+    (base modified reftree losttree newmark refmark lostmark citedmark
+          newnode-easy-converter refnode-easy-converter
+          lostnode-easy-converter citednode-easy-converter)
+    (macrolet ((gen-convereter (easy-converter)
+                 `(lambda (node route codelet)
+                    (declare (ignore node route))
+                    (funcall ,easy-converter codelet))))
+      (apply-converters
+        base modified reftree losttree newmark
+        refmark lostmark citedmark
+        (gen-convereter newnode-easy-converter)
+        (gen-convereter refnode-easy-converter)
+        (gen-convereter lostnode-easy-converter)
+        (gen-convereter citednode-easy-converter)))))
