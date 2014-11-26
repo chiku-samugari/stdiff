@@ -287,15 +287,15 @@
                       (retrieve-by-route base (nroute<-node node))))
             ((newnode-p node newmark)
              (funcall newnode-converter node rroute
-                      (retrieve-by-route modified (nroute<-node node))))
+                      (retrieve-by-route modified (route-normalize rroute))))
             (t next-level)))
     (with-route (node rroute) losttree
       (cond ((lostnode-p node lostmark)
              (funcall lostnode-converter node rroute
-                      (retrieve-by-route base (nroute<-node node))))
+                      (retrieve-by-route base (route-normalize rroute))))
             ((citednode-p node citedmark)
              (funcall citednode-converter node rroute
-                      (retrieve-by-route base (nroute<-node node))))
+                      (retrieve-by-route base (route-normalize rroute))))
             (t next-level)))))
 
 (defun nroute<-node (node)
