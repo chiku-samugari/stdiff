@@ -106,9 +106,7 @@
              (:home () (route-normalize home))
              (:home-rroute () home)
              (:valid? () valid?)
-             (:check-in () (if valid?
-                             (cons mark rroute)
-                             'invalid))
+             (:check-in () (cons mark rroute))
              (:cancel ()
               (setf valid? nil)
               (when cont
