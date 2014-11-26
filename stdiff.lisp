@@ -318,3 +318,24 @@
         (gen-convereter refnode-easy-converter)
         (gen-convereter lostnode-easy-converter)
         (gen-convereter citednode-easy-converter)))))
+
+(export
+  (defun apply-rconv (rawref rawlost newmark refmark lostmark citedmark
+                             new-rconv ref-rconv lost-rconv cited-rconv)
+    (values
+      (with-route (node rroute) rawref
+        (if (functionp node)
+          (funcall (>case (funcall node :mark)
+                     ((newmark) new-rconv)
+                     ((refmark) ref-rconv))
+                   node rroute
+                   (funcall node :subtree))
+          next-level))
+      (with-route (node rroute) rawlost
+        (if (functionp node)
+          (funcall (>case (funcall node :mark)
+                     ((lostmark) lost-rconv)
+                     ((citedmark) cited-rconv))
+                   node rroute
+                   (funcall node :subtree))
+          next-level)))))
