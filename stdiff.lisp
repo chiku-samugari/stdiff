@@ -167,7 +167,7 @@
                        (mapc #'(funcall _ :cancel) booking)
                        (mapc #'(funcall _ :cancel)
                              (collect-partly-bookings
-                               (route-normalize cited) modbook :route))
+                               (route-normalize cited) (remove-if-not #'(eq (funcall _ :mark) refmark) modbook) :route))
                        (stack-ref-booking cited node cont cur))
                      (:direct (cond ((eq mark lostmark)
                                      (funcall booking :cancel)
