@@ -20,12 +20,12 @@
                   ,@body))
          (,rec ,tree ,initial-route)))))
 
-(defmacro traverse/route (var-tree-pairs (route-var invalid-node &optional (style :union)) &body body)
-  (with-gensyms (rec order maxorder)
+(defmacro traverse/route (var-tree-pairs (route-var invalid-p-name &optional (style :union)) &body body)
+  (with-gensyms (rec order maxorder invalid-node)
     (let* ((variables (mapcar #'car var-tree-pairs))
            (sub-vars (mapcar #'(gensym (concat-str "SUB-" (string _))) variables)))
       `(let ((,invalid-node (gensym)))
-         (labels ((,(intern (concat-str (symbol-name invalid-node) "-P")) (node)
+         (labels ((,invalid-p-name (node)
                     (eq node ,invalid-node)))
            (symbol-macrolet ((next-level
                                (if (,(case style
@@ -34,11 +34,10 @@
                                        (t style))
                                      ,@(mapcar #`(proper-list-p ,a0) variables))
                                  (let ((,maxorder (max ,@(mapcar #`(length (check #'listp ,a0)) variables))))
-                                   (remove ,invalid-node
-                                           (loop :for ,order = 0 :then (1+ ,order)
-                                                 ,@(mapcan #2`(:for ,a0 :in (fillin (check #'listp ,a1) ,maxorder ,invalid-node))
-                                                           sub-vars variables)
-                                                 :collect (,rec ,@sub-vars (cons ,order ,route-var))))))))
+                                   (loop :for ,order = 0 :then (1+ ,order)
+                                         ,@(mapcan #2`(:for ,a0 :in (fillin (check #'listp ,a1) ,maxorder ,invalid-node))
+                                                   sub-vars variables)
+                                         :do (,rec ,@sub-vars (cons ,order ,route-var)))))))
              (labels ((,rec (,@variables ,route-var)
                         ,@body))
                (,rec ,@(mapcar #'second var-tree-pairs) (list 0)))))))))
@@ -99,7 +98,7 @@
   (or (equal x y) (start-with x y)))
 
 (defun route-booking (mark rroute subtree &optional cont (home rroute))
-  (let ((valid? t) (recalculated? nil))
+  (let ((valid? t))
     (dlambda (:route () (route-normalize rroute))
              (:rroute () rroute)
              (:mark () mark)
@@ -107,31 +106,21 @@
              (:home () (route-normalize home))
              (:home-rroute () home)
              (:valid? () valid?)
-             (:alive? () (or valid? recalculated?))
-             (:check-in () (cond (valid?  (cons mark rroute))
-                                 (recalculated? (funcall (alambda (ch)
-                                                           (if (functionp ch)
-                                                             (funcall ch :check-in)
-                                                             (mapcar #'self ch)))
-                                                         subtree))
-                                 (t subtree)))
+             (:check-in () (if valid?
+                             (cons mark rroute)
+                             'invalid))
              (:cancel ()
               (setf valid? nil)
               (when cont
-                (setf recalculated? t)
-                (setf subtree (funcall cont)))))))
+                (funcall cont))))))
 
 ;;; The structure retuned from RAWDIFF is called ``rawdiff''.
-(defun rawdiff (base modified refmark lostmark citedmark allowed-distance)
-  (multiple-value-bind (modtree basebook) (rdiff% base modified refmark lostmark citedmark allowed-distance)
+(defun rawdiff (base modified allowed-distance newmark refmark lostmark citedmark)
+  (multiple-value-bind (modbook basebook)
+    (rdiff% base modified allowed-distance newmark refmark lostmark citedmark)
     (values
-      (with-route (node r) modtree
-        (cond ((functionp node) (if (funcall node :alive?)
-                                  (funcall node :check-in)
-                                  'dead))
-              ((atom node) node)
-              (t next-level)))
-      (construct-losttree base basebook))))
+      (rawdiff<-book modified modbook)
+      (rawdiff<-book base basebook))))
 
 (defun find-ref-candidates (tree rroute allowed-distance base)
   (some #'(and (<= (levenshtein-distance rroute a0) allowed-distance) a0)
@@ -152,9 +141,9 @@
         ((start-with y x) :indirect)
         ((start-with x y) :partly)))
 
-(defun collect-partly-bookings (route book)
+(defun collect-partly-bookings (route book routecat)
   (remove-if-not #'(and (funcall a0 :valid?)
-                        (start-with route (funcall a0 :home)))
+                        (start-with route (funcall a0 routecat)))
                  book))
 
 (defun check-booking (rroute basebook)
@@ -165,11 +154,11 @@
             (values it
                     (route-relation route (funcall it :home))
                     (funcall it :mark)))
-           ((collect-partly-bookings route basebook)
+           ((collect-partly-bookings route basebook :home)
             (values it :partly t))
            (t (values nil nil nil)))))
 
-(defun rdiff% (base modified refmark lostmark citedmark allowed-distance)
+(defun rdiff% (base modified allowed-distance newmark refmark lostmark citedmark)
   (let (basebook modbook)
     (labels ((booking-as-ref (cited node cont cur)
                (multiple-value-bind (booking relation mark)
@@ -179,7 +168,7 @@
                      (:partly
                        (mapc #'(funcall _ :cancel) booking)
                        (mapc #'(funcall _ :cancel) (collect-partly-bookings
-                                                     (route-normalize cited) modbook))
+                                                     (route-normalize cited) modbook :route))
                        (stack-ref-booking cited node cont cur))
                      (:direct (cond ((eq mark lostmark)
                                      (funcall booking :cancel)
@@ -193,9 +182,11 @@
                                              (:direct (push (route-booking citedmark cur subnode nil subrroute) basebook))
                                              (:indirect next-level)
                                              (t (push (route-booking lostmark subrroute subnode) basebook)))))
-                                       (car (push (route-booking refmark cited node cont) modbook)))
+                                       (push (route-booking refmark cited node cont cur) modbook))
                                       ((eq mark citedmark) (funcall cont)))))
                    (stack-ref-booking cited node cont cur))))
+             (booking-as-new (rroute node)
+               (push (route-booking newmark rroute node) modbook))
              (booking-as-lost (rroute node)
                (multiple-value-bind (booking relation)
                  (check-booking rroute basebook)
@@ -213,43 +204,44 @@
                    (push (route-booking lostmark rroute node) basebook))))
              (stack-ref-booking (cited node cont cur)
                (push (route-booking citedmark cur node nil cited) basebook)
-               (car (push (route-booking refmark cited node cont) modbook))))
+               (push (route-booking refmark cited node cont cur) modbook)))
       (symbol-macrolet ((cont (lambda () (if (proper-list-p mnode)
                                            next-level
-                                           (lambda (_) (declare (ignore _)) mnode)))))
+                                           (booking-as-new rroute mnode)))))
+        (traverse/route ((bnode base) (mnode modified)) (rroute invalid-p)
+          (cond ((and (not (invalid-p mnode)) (not (invalid-p bnode)))
+                 (acond ((equal mnode bnode)
+                         (booking-as-ref rroute bnode cont rroute))
+                        ((find-ref-candidates mnode rroute allowed-distance base)
+                         (booking-as-lost rroute bnode)
+                         (booking-as-ref it mnode cont rroute))
+                        ((and (not (proper-list-p bnode)) (not (proper-list-p mnode)))
+                         (booking-as-lost rroute bnode)
+                         (booking-as-new rroute mnode))
+                        ((not (proper-list-p bnode))
+                         (booking-as-lost rroute bnode)
+                         next-level)
+                        ((not (proper-list-p mnode))
+                         (booking-as-lost rroute bnode)
+                         (booking-as-new rroute mnode))
+                        (t next-level)))
+                ((invalid-p bnode)
+                 (acond ((find-ref-candidates mnode rroute allowed-distance base)
+                         (booking-as-ref it mnode cont rroute))
+                        ((proper-list-p mnode) next-level)
+                        (t (booking-as-new rroute mnode))))
+                ((invalid-p mnode) (booking-as-lost rroute bnode))))
         (values
-          (traverse/route ((bnode base) (mnode modified)) (rroute invalid)
-            (cond ((and (not (invalid-p mnode)) (not (invalid-p bnode)))
-                   (acond ((equal mnode bnode)
-                           (booking-as-ref rroute bnode cont rroute))
-                          ((find-ref-candidates mnode rroute allowed-distance base)
-                           (booking-as-lost rroute bnode)
-                           (booking-as-ref it mnode cont rroute))
-                          ((and (not (proper-list-p bnode)) (not (proper-list-p mnode)))
-                           (booking-as-lost rroute bnode)
-                           mnode)
-                          ((not (proper-list-p bnode))
-                           (booking-as-lost rroute bnode)
-                           next-level)
-                          ((not (proper-list-p mnode))
-                           (booking-as-lost rroute bnode)
-                           mnode)
-                          (t next-level)))
-                  ((invalid-p bnode)
-                   (acond ((find-ref-candidates mnode rroute allowed-distance base)
-                           (booking-as-ref it mnode cont rroute))
-                          ((proper-list-p mnode) next-level)
-                          (t mnode)))
-                  ((invalid-p mnode)
-                   (booking-as-lost rroute bnode)
-                   invalid)))
-          (remove-if-not #'(funcall _ :alive?) basebook))))))
+          (remove-if-not #'(funcall _ :valid?) modbook)
+          (remove-if-not #'(funcall _ :valid?) basebook))))))
 
-(defun construct-losttree (base basebook)
-  (with-route (node rroute) base
-    (aif (member rroute basebook :key #'(funcall _ :home-rroute) :test #'equal)
-      (funcall (car it) :check-in)
-      next-level)))
+(defun rawdiff<-book (code book)
+  (with-route (node rroute) code
+    (or (car (member rroute book :key #'(funcall _ :home-rroute) :test #'equal))
+        next-level)))
+
+(defun newnode-p (node newmark)
+  (and (proper-list-p node) (eq (car node) newmark)))
 
 (defun refnode-p (node refmark)
   (and (proper-list-p node) (eq (car node) refmark)))
@@ -261,14 +253,21 @@
   (and (proper-list-p node) (eq (car node) citedmark)))
 
 ;;; The structure returned from DIFF is called ``diff.''
-;;; The contents is identical to rawdiff for now.
 (defun diff (base modified allowed-distance
-                    &optional (refmark (gensym "REF"))
+                    &optional (newmark (gensym "NEW"))
+                    (refmark (gensym "REF"))
                     (lostmark (gensym "LOST"))
                     (citedmark (gensym "CITED")))
-  (mvidentity
-    (rawdiff base modified refmark lostmark citedmark allowed-distance)
-    refmark lostmark citedmark))
+  (multiple-value-call #'(values (retrieve-from-rawdiff a0)
+                                 (retrieve-from-rawdiff a1)
+                                 newmark refmark lostmark citedmark)
+    (rawdiff base modified allowed-distance newmark refmark lostmark citedmark)))
+
+(defun retrieve-from-rawdiff (rawdiff)
+  (with-route (node rr) rawdiff
+    (if (functionp node)
+      (funcall node :check-in)
+      next-level)))
 
 ;;; A converter is a 3 parameter function. It takes node, route, and
 ;;; codelet. A converter should return a codelet
@@ -277,17 +276,30 @@
 ;;; achieve a suite a certain consistensy, it is good to introduce a
 ;;; special data structure for new node, too.  Moreover, nodes can
 ;;; be expressed as a class.
-(defun apply-converters (diff base refmark lostmark newnode-converter lostnode-converter refnode-converter)
-  (with-route (cur route) diff
-    (cond ((refnode-p cur refmark)
-           (funcall refnode-converter cur route
-                    (retrieve-by-route base (route-normalize (drop cur)))))
-          ((lostnode-p cur lostmark)
-           (funcall lostnode-converter cur route
-                    (retrieve-by-route base (route-normalize (drop cur)))))
-          ((newnode-p cur refmark lostmark)
-           (funcall newnode-converter cur route cur))
-          (t next-level))))
+(defun apply-converters (base modified reftree losttree
+                              newmark refmark lostmark citedmark
+                              newnode-converter refnode-converter
+                              lostnode-converter citednode-converter)
+  (values
+    (with-route (node rroute) reftree
+      (cond ((refnode-p node refmark)
+             (funcall refnode-converter node rroute
+                      (retrieve-by-route base (nroute<-node node))))
+            ((newnode-p node newmark)
+             (funcall newnode-converter node rroute
+                      (retrieve-by-route modified (nroute<-node node))))
+            (t next-level)))
+    (with-route (node rroute) losttree
+      (cond ((lostnode-p node lostmark)
+             (funcall lostnode-converter node rroute
+                      (retrieve-by-route base (nroute<-node node))))
+            ((citednode-p node citedmark)
+             (funcall citednode-converter node rroute
+                      (retrieve-by-route base (nroute<-node node))))
+            (t next-level)))))
+
+(defun nroute<-node (node)
+  (route-normalize (drop node)))
 
 ;;; An easy-converter takes a codelet as its only argument.
 (defun apply-modifiednode-converters
@@ -301,15 +313,3 @@
       (gen-convereter newnode-easy-converter)
       (gen-convereter lostnode-easy-converter)
       (gen-convereter #'identity))))
-
-(defun newnode-p (node refmark lostmark)
-  (or (atom node) (composed-of-newnodes-p node refmark lostmark)))
-
-(defun composed-of-newnodes-p (tree refmark lostmark)
-  (reduce (lambda (acc node)
-            (and acc
-                 (cond ((atom node) t)
-                       ((or (refnode-p node refmark) (lostnode-p node lostmark)) nil)
-                       (t (composed-of-newnodes-p node refmark lostmark)))))
-          tree
-          :initial-value t))
