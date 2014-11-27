@@ -113,13 +113,12 @@
                 (funcall cont))))))
 
 ;;; The structure retuned from RAWDIFF is called ``rawdiff''.
-(export
-  (defun rawdiff (base modified allowed-distance newmark refmark lostmark citedmark)
-    (multiple-value-bind (modbook basebook)
-      (rdiff% base modified allowed-distance newmark refmark lostmark citedmark)
-      (values
-        (rawdiff<-book modified modbook)
-        (rawdiff<-book base basebook)))))
+(defun rawdiff (base modified allowed-distance newmark refmark lostmark citedmark)
+  (multiple-value-bind (modbook basebook)
+    (rdiff% base modified allowed-distance newmark refmark lostmark citedmark)
+    (values
+      (rawdiff<-book modified modbook)
+      (rawdiff<-book base basebook))))
 
 (defun find-ref-candidates (tree rroute allowed-distance base)
   (some #'(and (<= (levenshtein-distance rroute a0) allowed-distance) a0)
@@ -302,40 +301,38 @@
   (route-normalize (drop node)))
 
 ;;; An easy-converter takes a codelet as its only argument.
-(export
-  (defun apply-easy-converters
-    (base modified reftree losttree newmark refmark lostmark citedmark
-          newnode-easy-converter refnode-easy-converter
-          lostnode-easy-converter citednode-easy-converter)
-    (macrolet ((gen-convereter (easy-converter)
-                 `(lambda (node route codelet)
-                    (declare (ignore node route))
-                    (funcall ,easy-converter codelet))))
-      (apply-converters
-        base modified reftree losttree newmark
-        refmark lostmark citedmark
-        (gen-convereter newnode-easy-converter)
-        (gen-convereter refnode-easy-converter)
-        (gen-convereter lostnode-easy-converter)
-        (gen-convereter citednode-easy-converter)))))
+(defun apply-easy-converters
+  (base modified reftree losttree newmark refmark lostmark citedmark
+        newnode-easy-converter refnode-easy-converter
+        lostnode-easy-converter citednode-easy-converter)
+  (macrolet ((gen-convereter (easy-converter)
+               `(lambda (node route codelet)
+                  (declare (ignore node route))
+                  (funcall ,easy-converter codelet))))
+    (apply-converters
+      base modified reftree losttree newmark
+      refmark lostmark citedmark
+      (gen-convereter newnode-easy-converter)
+      (gen-convereter refnode-easy-converter)
+      (gen-convereter lostnode-easy-converter)
+      (gen-convereter citednode-easy-converter))))
 
-(export
-  (defun apply-rconv (rawref rawlost newmark refmark lostmark citedmark
-                             new-rconv ref-rconv lost-rconv cited-rconv)
-    (values
-      (with-route (node rroute) rawref
-        (if (functionp node)
-          (funcall (>case (funcall node :mark)
-                     ((newmark) new-rconv)
-                     ((refmark) ref-rconv))
-                   node rroute
-                   (funcall node :subtree))
-          next-level))
-      (with-route (node rroute) rawlost
-        (if (functionp node)
-          (funcall (>case (funcall node :mark)
-                     ((lostmark) lost-rconv)
-                     ((citedmark) cited-rconv))
-                   node rroute
-                   (funcall node :subtree))
-          next-level)))))
+(defun apply-rconv (rawref rawlost newmark refmark lostmark citedmark
+                           new-rconv ref-rconv lost-rconv cited-rconv)
+  (values
+    (with-route (node rroute) rawref
+                (if (functionp node)
+                  (funcall (>case (funcall node :mark)
+                                  ((newmark) new-rconv)
+                                  ((refmark) ref-rconv))
+                           node rroute
+                           (funcall node :subtree))
+                  next-level))
+    (with-route (node rroute) rawlost
+                (if (functionp node)
+                  (funcall (>case (funcall node :mark)
+                                  ((lostmark) lost-rconv)
+                                  ((citedmark) cited-rconv))
+                           node rroute
+                           (funcall node :subtree))
+                  next-level))))
