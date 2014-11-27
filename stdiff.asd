@@ -9,7 +9,7 @@
   :author "Takehiko Nawata"
   :license "MIT License"
   :description "STDIFF"
-  :long-description "STDIFF : Syntax tree diff."
+  :long-description "STDIFF : Symbol Tree Diff."
   :depends-on (:chiku.util :papply)
   :serial t
   :components ((:file "packages")
